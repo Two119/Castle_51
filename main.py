@@ -91,47 +91,57 @@ class Player:
             self.anim_time = time.time()
     
     def update(self):
-        
+        global ctrl_pressed
         self.rect = pygame.Rect(self.pos[0]+20, self.pos[1] + 12, 76, 116)
         self.wide_rect = pygame.Rect(self.pos[0], self.pos[1] - 8, 128, 144)
         #pygame.draw.rect(win, [255, 0, 0], self.rect)
         #pygame.draw.rect(win, [255, 0, 0], self.wide_rect)
-        
-        if pygame.key.get_pressed()[pygame.K_RIGHT]:
-            self.dir = 0
-            self.vel[0] = self.speed*1
-            self.frame[1] = 1
-            
-        elif pygame.key.get_pressed()[pygame.K_LEFT]:
-            self.dir = 1
-            self.vel[0] = self.speed*-1
-            self.frame[1] = 1
-            
-        else:
-            self.vel[0] = 0
-            if self.vel[1] == 0:
-                self.frame[1] = 0
+        if self.crate == None:
+            if pygame.key.get_pressed()[pygame.K_RIGHT]:
+                self.dir = 0
+                self.vel[0] = self.speed*1
+                self.frame[1] = 1
                 
-        if pygame.key.get_pressed()[pygame.K_UP]:
-            self.vel[1] = self.speed*-1
-            self.frame[1] = 1
-            
-        elif pygame.key.get_pressed()[pygame.K_DOWN]:
-            self.vel[1] = self.speed*1
-            self.frame[1] = 1
-            
+            elif pygame.key.get_pressed()[pygame.K_LEFT]:
+                self.dir = 1
+                self.vel[0] = self.speed*-1
+                self.frame[1] = 1
+                
+            else:
+                self.vel[0] = 0
+                if self.vel[1] == 0:
+                    self.frame[1] = 0
+                    
+            if pygame.key.get_pressed()[pygame.K_UP]:
+                self.vel[1] = self.speed*-1
+                self.frame[1] = 1
+                
+            elif pygame.key.get_pressed()[pygame.K_DOWN]:
+                self.vel[1] = self.speed*1
+                self.frame[1] = 1
+                
+            else:
+                self.vel[1] = 0
         else:
-            self.vel[1] = 0
-        
+            self.vel = [0, 0]
+            #print(ctrl_pressed)
+            if not ctrl_pressed:
+                if (pygame.key.get_pressed()[pygame.K_LCTRL] or pygame.key.get_pressed()[pygame.K_RCTRL]):
+                    ctrl_pressed = True
+                    self.crate = None
+                    
+            
+                    #print("A")
         #self.vel = [self.speed*math.cos(math.radians(self.move_angle)), self.speed*math.sin(math.radians(self.move_angle))]
 
         self.update_animation()
         
     def render(self):
-        try:
-            win.blit(pygame.transform.flip(knight_animations[self.frame[1]].get([self.frame[0], 0]), self.dir, False), self.pos)
-        except:    
-            self.frame[0] = 0
+        if self.crate == None:
+            try:
+                win.blit(pygame.transform.flip(knight_animations[self.frame[1]].get([self.frame[0], 0]), self.dir, False), self.pos)
+            except:    
+                self.frame[0] = 0
             
         self.pos[0] += self.vel[0]
         self.pos[1] += self.vel[1]
@@ -166,7 +176,8 @@ for count, level in enumerate(levels):
                 crates.append([(j*crate.get_width(), i*crate.get_height()), pygame.Rect(j*crate.get_width() + 4 + (win.get_width() - 10*crate.get_width())/2, i*crate.get_height()  + 4 + (win.get_height() - 6*crate.get_height())/2, crate.get_width() - 8, crate.get_height() - 8)])
 
 current_level = 0
-
+global ctrl_pressed
+ctrl_pressed = False
 while True:
     win.fill([0, 0, 0])
     
@@ -181,6 +192,9 @@ while True:
     above_player.clear()
     
     player.update()
+    
+    if not (pygame.key.get_pressed()[pygame.K_LCTRL] or pygame.key.get_pressed()[pygame.K_RCTRL]):
+        ctrl_pressed = False
     
     for crate_, rect in crates:
         count += 1
@@ -197,6 +211,11 @@ while True:
                     above_player.remove(count)
             
             if rect.colliderect(player.rect):
+                if (pygame.key.get_pressed()[pygame.K_LCTRL] or pygame.key.get_pressed()[pygame.K_RCTRL]) and not ctrl_pressed:
+                    ctrl_pressed = True
+                    if player.crate == None:
+                        player.crate = count
+                
                 if (rect.y - player.rect.y) < 36 and (rect.y - player.rect.y) > 0:
                     if player.vel[1] > 0:
                         player.vel[1] = 0
@@ -216,6 +235,7 @@ while True:
     for x in above_player:
         win.blit(crate, [crates[x][0][0] + (win.get_width() - 10*crate.get_width())/2, crates[x][0][1] + (win.get_height() - len(levels[current_level])*crate.get_height())/2])
     
-    
+    if player.crate != None:
+        pygame.draw.rect(win, [255, 255, 255], crates[player.crate][1], 4)
         
     pygame.display.update()
