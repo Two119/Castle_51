@@ -1,4 +1,4 @@
-import pygame, math, time
+import pygame, math, time, random
 
 pygame.init() 
 pygame.mixer.init()
@@ -67,6 +67,7 @@ class Player:
         self.pos = [100, 100]
         self.frame = [0, 0]
         self.rect = pygame.Rect(self.pos[0]+16, self.pos[1], 112, 128)
+        self.wide_rect = pygame.Rect(self.pos[0] - 8, self.pos[1] - 8, 128, 128)
         self.alive = True
         self.dir = 0
         self.speed = 5
@@ -75,12 +76,16 @@ class Player:
         self.angle = 0
         self.anim_time = time.time()
         self.vel = [0, 0]
+        self.crate = None
     
     def update_animation(self):
-        if time.time() - self.anim_time >= 0.125:
+        if time.time() - self.anim_time >= 0.1:
             self.frame[0] += 1
             
-            if self.frame[0] >= len(knight_animations[self.frame[1]].sheet[0]):
+            try:
+                knight_animations[self.frame[1]].get([self.frame[0], 0])
+                
+            except:
                 self.frame[0] = 0
             
             self.anim_time = time.time()
@@ -88,7 +93,9 @@ class Player:
     def update(self):
         
         self.rect = pygame.Rect(self.pos[0]+20, self.pos[1] + 12, 76, 116)
-        pygame.draw.rect(win, [255, 0, 0], self.rect)
+        self.wide_rect = pygame.Rect(self.pos[0], self.pos[1] - 8, 128, 144)
+        #pygame.draw.rect(win, [255, 0, 0], self.rect)
+        #pygame.draw.rect(win, [255, 0, 0], self.wide_rect)
         
         if pygame.key.get_pressed()[pygame.K_RIGHT]:
             self.dir = 0
@@ -104,15 +111,33 @@ class Player:
             self.vel[0] = 0
             if self.vel[1] == 0:
                 self.frame[1] = 0
+                
+        if pygame.key.get_pressed()[pygame.K_UP]:
+            self.vel[1] = self.speed*-1
+            self.frame[1] = 1
+            
+        elif pygame.key.get_pressed()[pygame.K_DOWN]:
+            self.vel[1] = self.speed*1
+            self.frame[1] = 1
+            
+        else:
+            self.vel[1] = 0
         
         #self.vel = [self.speed*math.cos(math.radians(self.move_angle)), self.speed*math.sin(math.radians(self.move_angle))]
+
+        self.update_animation()
+        
+    def render(self):
+        try:
+            win.blit(pygame.transform.flip(knight_animations[self.frame[1]].get([self.frame[0], 0]), self.dir, False), self.pos)
+        except:    
+            self.frame[0] = 0
+            
         self.pos[0] += self.vel[0]
         self.pos[1] += self.vel[1]
         
-        win.blit(pygame.transform.flip(knight_animations[self.frame[1]].get([self.frame[0], 0]), self.dir, False), self.pos)
-        self.update_animation()
-        
 crate = scale_image(pygame.image.load("assets/sprites/crate.png").convert())
+crate.set_colorkey([255, 255, 255])
 
 knight_animations = [SpriteSheet(scale_image(pygame.image.load("assets/sprites/Knight/Idle/Idle-Sheet.png").convert()), [4, 1], [255, 255, 255]), SpriteSheet(scale_image(pygame.image.load("assets/sprites/Knight/Run/Run-Sheet.png").convert()), [6, 1], [255, 255, 255]), SpriteSheet(scale_image(pygame.image.load("assets/sprites/Knight/Death/Death-Sheet.png").convert()), [6, 1], [255, 255, 255])]
 wizard_animations = [SpriteSheet(scale_image(pygame.image.load("assets/sprites/Wizard/Idle/Idle-Sheet.png").convert()), [4, 1], [255, 255, 255]), SpriteSheet(scale_image(pygame.image.load("assets/sprites/Wizard/Run/Run-Sheet.png").convert()), [6, 1], [255, 255, 255]), SpriteSheet(scale_image(pygame.image.load("assets/sprites/Wizard/Death/Death-Sheet.png").convert()), [6, 1], [255, 255, 255])]
@@ -121,7 +146,26 @@ animation_index = {"idle":0, "run":1, "death":2}
 
 player = Player()
 
-queue = [player]
+above_player = []
+below_player = []
+
+levels = [[]]
+
+crates = []
+
+for count, level in enumerate(levels):
+    
+    for i in range(6):
+        
+        levels[count].append([])
+        
+        for j in range(10):
+            n = random.randint(0, 10)
+            if n < 4:
+                levels[count][i].append(n)
+                crates.append([(j*crate.get_width(), i*crate.get_height()), pygame.Rect(j*crate.get_width() + 4 + (win.get_width() - 10*crate.get_width())/2, i*crate.get_height()  + 4 + (win.get_height() - 6*crate.get_height())/2, crate.get_width() - 8, crate.get_height() - 8)])
+
+current_level = 0
 
 while True:
     win.fill([0, 0, 0])
@@ -132,7 +176,46 @@ while True:
         if event.type == pygame.QUIT:
             pygame.quit()
     
-    for item in queue:
-        item.update()
+    count = -1
+    below_player.clear()
+    above_player.clear()
+    
+    player.update()
+    
+    for crate_, rect in crates:
+        count += 1
+        #pygame.draw.rect(win, [255, 0, 0], rect)
+        if rect.colliderect(player.wide_rect):
+            if rect.y < player.rect.y:
+                below_player.append(count)
+            else:
+                above_player.append(count)
+                
+            if (rect.y + rect.h) < (player.rect.y + player.rect.h):
+                below_player.append(count)
+                if count in above_player:
+                    above_player.remove(count)
+            
+            if rect.colliderect(player.rect):
+                if (rect.y - player.rect.y) < 36 and (rect.y - player.rect.y) > 0:
+                    if player.vel[1] > 0:
+                        player.vel[1] = 0
+                        
+                if (player.rect.y - rect.y) < 28 and (player.rect.y - rect.y) > 0:
+                    if player.vel[1] < 0:
+                        player.vel[1] = 0
+            
+        else:
+            below_player.append(count)
+    
+    for x in below_player:
+        win.blit(crate, [crates[x][0][0] + (win.get_width() - 10*crate.get_width())/2, crates[x][0][1] + (win.get_height() - len(levels[current_level])*crate.get_height())/2])
+        
+    player.render()
+        
+    for x in above_player:
+        win.blit(crate, [crates[x][0][0] + (win.get_width() - 10*crate.get_width())/2, crates[x][0][1] + (win.get_height() - len(levels[current_level])*crate.get_height())/2])
+    
+    
         
     pygame.display.update()
