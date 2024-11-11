@@ -77,6 +77,7 @@ class Player:
         self.anim_time = time.time()
         self.vel = [0, 0]
         self.crate = None
+        self.pressed = [0, 0, 0, 0]
     
     def update_animation(self):
         if time.time() - self.anim_time >= 0.1:
@@ -130,9 +131,57 @@ class Player:
                     ctrl_pressed = True
                     self.crate = None
                     
-            
-                    #print("A")
-        #self.vel = [self.speed*math.cos(math.radians(self.move_angle)), self.speed*math.sin(math.radians(self.move_angle))]
+            if pygame.key.get_pressed()[pygame.K_RIGHT]:
+                if not self.pressed[0]:
+                    for count, crate_ in enumerate(crates):
+                        coord = [int(crate_[1].x / crate.get_width()), int(crate_[1].y / crate.get_height())]
+                        current_crate_coord = [int(crates[self.crate][1].x / crate.get_width()), int(crates[self.crate][1].y / crate.get_height())]
+                        if coord[0] - current_crate_coord[0] == 1 and coord[1] == current_crate_coord[1]:
+                            self.crate = count
+                            self.pos[0] += crate.get_width()
+                            break
+                self.pressed[0] = 1
+            else:
+                self.pressed[0] = 0
+                
+            if pygame.key.get_pressed()[pygame.K_LEFT]:
+                if not self.pressed[1]:
+                    for count, crate_ in enumerate(crates):
+                        coord = [int(crate_[1].x / crate.get_width()), int(crate_[1].y / crate.get_height())]
+                        current_crate_coord = [int(crates[self.crate][1].x / crate.get_width()), int(crates[self.crate][1].y / crate.get_height())]
+                        if coord[0] - current_crate_coord[0] == -1 and coord[1] == current_crate_coord[1]:
+                            self.crate = count
+                            self.pos[0] -= crate.get_width()
+                            break
+                self.pressed[1] = 1
+            else:
+                self.pressed[1] = 0
+                
+            if pygame.key.get_pressed()[pygame.K_UP]:
+                if not self.pressed[2]:
+                    for count, crate_ in enumerate(crates):
+                        coord = [int(crate_[1].x / crate.get_width()), int(crate_[1].y / crate.get_height())]
+                        current_crate_coord = [int(crates[self.crate][1].x / crate.get_width()), int(crates[self.crate][1].y / crate.get_height())]
+                        if coord[1] - current_crate_coord[1] == -1 and coord[0] == current_crate_coord[0]:
+                            self.crate = count
+                            self.pos[1] -= crate.get_height()
+                            break
+                self.pressed[2] = 1
+            else:
+                self.pressed[2] = 0
+                
+            if pygame.key.get_pressed()[pygame.K_DOWN]:
+                if not self.pressed[3]:
+                    for count, crate_ in enumerate(crates):
+                        coord = [int(crate_[1].x / crate.get_width()), int(crate_[1].y / crate.get_height())]
+                        current_crate_coord = [int(crates[self.crate][1].x / crate.get_width()), int(crates[self.crate][1].y / crate.get_height())]
+                        if coord[1] - current_crate_coord[1] == 1 and coord[0] == current_crate_coord[0]:
+                            self.crate = count
+                            self.pos[1] += crate.get_height()
+                            break
+                self.pressed[3] = 1
+            else:
+                self.pressed[3] = 0
 
         self.update_animation()
         
@@ -216,7 +265,7 @@ while True:
                     if player.crate == None:
                         player.crate = count
                 
-                if (rect.y - player.rect.y) < 36 and (rect.y - player.rect.y) > 0:
+                if (rect.y - player.rect.y) < 48 and (rect.y - player.rect.y) > 0:
                     if player.vel[1] > 0:
                         player.vel[1] = 0
                         
