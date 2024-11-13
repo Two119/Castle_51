@@ -75,6 +75,7 @@ async def main():
             self.air = 100
             self.health = 8
             self.inventory = {"speed_potions":0,"air_potions":0, "health_potions":0, "weapon":0}
+            self.inv_no = 0
             self.angle = 0
             self.anim_time = time.time()
             self.vel = [0, 0]
@@ -283,6 +284,22 @@ async def main():
         
         player.update()
         
+        if (player.rect.y + player.rect.h) > (win.get_height() - 40):
+            if player.vel[1] > 0:
+                player.vel[1] = 0
+                
+        if (player.rect.y) < (128):
+            if player.vel[1] < 0:
+                player.vel[1] = 0
+                
+        if (player.rect.x) < (40):
+            if player.vel[0] < 0:
+                player.vel[0] = 0
+                
+        if (player.rect.x + player.rect.w) > (win.get_width() - 40):
+            if player.vel[0] > 0:
+                player.vel[0] = 0
+        
         if not (pygame.key.get_pressed()[pygame.K_LCTRL] or pygame.key.get_pressed()[pygame.K_RCTRL]):
             ctrl_pressed = False
         
@@ -349,6 +366,17 @@ async def main():
             
         if player.inventory["health_potions"] > 0:
             win.blit(potion_sprites[2], [player.inventory_box.x + 16 + player.inventory_box.w/2, player.inventory_box.y + 12])
+            
+        if pygame.key.get_pressed()[pygame.K_1]:
+            player.inv_no = 0
+        if pygame.key.get_pressed()[pygame.K_2]:
+            player.inv_no = 1
+        if pygame.key.get_pressed()[pygame.K_3]:
+            player.inv_no = 2
+        if pygame.key.get_pressed()[pygame.K_4]:
+            player.inv_no = 3
+            
+        pygame.draw.rect(win, [125, 125, 125], pygame.Rect(player.inventory_box.x + (player.inv_no*player.inventory_box.w/4), player.inventory_box.y, player.inventory_box.h, player.inventory_box.h), 4)
         
         pygame.display.update()
         await asyncio.sleep(0)
