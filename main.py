@@ -83,6 +83,8 @@ async def main():
             self.pressed = [0, 0, 0, 0]
             self.mask = pygame.mask.from_surface(pygame.transform.flip(knight_animations[self.frame[1]].get([self.frame[0], 0]), self.dir, False))
             self.inventory_box = pygame.Rect((win.get_width() - 64*4)/2, win.get_height() - 88, 64*4, 64)
+            self.speed_effect = 0
+            self.speed_time = time.time()
         
         def update_animation(self):
             if time.time() - self.anim_time >= 0.1:
@@ -105,12 +107,12 @@ async def main():
             if self.crate == None:
                 if pygame.key.get_pressed()[pygame.K_RIGHT]:
                     self.dir = 0
-                    self.vel[0] = self.speed*1
+                    self.vel[0] = (self.speed + self.speed_effect)*1
                     self.frame[1] = 1
                     
                 elif pygame.key.get_pressed()[pygame.K_LEFT]:
                     self.dir = 1
-                    self.vel[0] = self.speed*-1
+                    self.vel[0] = (self.speed + self.speed_effect)*-1
                     self.frame[1] = 1
                     
                 else:
@@ -119,11 +121,11 @@ async def main():
                         self.frame[1] = 0
                         
                 if pygame.key.get_pressed()[pygame.K_UP]:
-                    self.vel[1] = self.speed*-1
+                    self.vel[1] = (self.speed + self.speed_effect)*-1
                     self.frame[1] = 1
                     
                 elif pygame.key.get_pressed()[pygame.K_DOWN]:
-                    self.vel[1] = self.speed*1
+                    self.vel[1] =(self.speed + self.speed_effect)*1
                     self.frame[1] = 1
                     
                 else:
@@ -189,6 +191,10 @@ async def main():
                     self.pressed[3] = 1
                 else:
                     self.pressed[3] = 0
+
+            if time.time() - self.speed_time >= 5:
+                self.speed_time = time.time()
+                self.speed_effect = 0
 
             self.update_animation()
             
@@ -283,6 +289,8 @@ async def main():
     
     air_text = ui_font.render("AIR", False, [255, 255, 255], [0, 0, 0])
     air_text.set_colorkey([0, 0, 0])
+    
+    e_pressed = False
     
     while True:
 
@@ -408,6 +416,24 @@ async def main():
         if pygame.key.get_pressed()[pygame.K_4]:
             player.inv_no = 3
             
+        if not e_pressed:
+            if pygame.key.get_pressed()[pygame.K_e]:
+                if player.inv_no == 0:
+                    if player.inventory["speed_potions"] > 0:
+                        player.inventory["speed_potions"] -= 1
+                        player.speed_effect = 2.5
+                        player.speed_time = time.time()
+                        
+                if player.inv_no == 1:
+                    if player.inventory["air_potions"] > 0:
+                        player.inventory["air_potions"] -= 1
+                        player.air += 33
+                  
+                e_pressed = True
+                
+        if not pygame.key.get_pressed()[pygame.K_e]:
+            e_pressed = False
+             
         pygame.draw.rect(win, [125, 125, 125], pygame.Rect(player.inventory_box.x + (player.inv_no*player.inventory_box.w/4), player.inventory_box.y, player.inventory_box.h, player.inventory_box.h), 4)
         
         pygame.draw.rect(win, [75, 200, 75], pygame.Rect(324, 8, (player.health/100)*256, 28))
