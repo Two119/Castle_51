@@ -73,7 +73,7 @@ async def main():
             self.dir = 0
             self.speed = 5
             self.air = 100
-            self.health = 8
+            self.health = 100
             self.inventory = {"speed_potions":0,"air_potions":0, "health_potions":0, "weapon":0}
             self.inv_no = 0
             self.angle = 0
@@ -193,13 +193,21 @@ async def main():
             self.update_animation()
             
         def render(self):
+            if self.air > 100:
+                    self.air = 100
+                    
             if self.crate == None:
+                if self.air < 100:
+                    self.air += 0.25
+                
                 try:
                     win.blit(pygame.transform.flip(knight_animations[self.frame[1]].get([self.frame[0], 0]), self.dir, False), self.pos)
                     self.mask = pygame.mask.from_surface(pygame.transform.flip(knight_animations[self.frame[1]].get([self.frame[0], 0]), self.dir, False))
                 except:    
                     self.frame[0] = 0
             else:
+                self.air -= 0.75
+                
                 current_crate_coord = [int((crates[self.crate][1].x - (4 + (win.get_width() - 10*crate.get_width())/2))/ crate.get_width()), int((crates[self.crate][1].y - (4 + (win.get_height() - 6*crate.get_height())/2))/ crate.get_height())]
 
                 if potions[current_level][current_crate_coord[1]][current_crate_coord[0]] == 1:
@@ -266,7 +274,16 @@ async def main():
     potion_sprites[2].set_colorkey([255, 255, 255])
 
     bg = scale_image(pygame.image.load("assets/maps/png/level_1.png").convert())
-
+    
+    inv_font = pygame.font.Font("assets/font/yoster.ttf", 20)
+    ui_font = pygame.font.Font("assets/font/yoster.ttf", 28)
+    
+    health_text = ui_font.render("HEALTH", False, [255, 255, 255], [0, 0, 0])
+    health_text.set_colorkey([0, 0, 0])
+    
+    air_text = ui_font.render("AIR", False, [255, 255, 255], [0, 0, 0])
+    air_text.set_colorkey([0, 0, 0])
+    
     while True:
 
         win.blit(bg, [0, 0])
@@ -322,6 +339,9 @@ async def main():
                         ctrl_pressed = True
                         if player.crate == None:
                             player.crate = count
+                            
+                            if (rect.y - player.rect.y) < 64 and (rect.y - player.rect.y) > 0:
+                                player.pos[1] -= 48 - (player.rect.y - player.rect.y)
                     
                     if (rect.y - player.rect.y) < 64 and (rect.y - player.rect.y) > 0:
                         if player.vel[1] > 0:
@@ -358,14 +378,26 @@ async def main():
         pygame.draw.line(win, [75, 75, 75], [player.inventory_box.x + (2*player.inventory_box.w/4), player.inventory_box.y], [player.inventory_box.x + (2*player.inventory_box.w/4), player.inventory_box.y + player.inventory_box.h - 4], 4)
         pygame.draw.line(win, [75, 75, 75], [player.inventory_box.x + (3*player.inventory_box.w/4), player.inventory_box.y], [player.inventory_box.x + (3*player.inventory_box.w/4), player.inventory_box.y + player.inventory_box.h - 4], 4)
         
+        speed_potions_no = inv_font.render(str(player.inventory["speed_potions"]), False, [255, 255, 255], [0, 0, 0])
+        speed_potions_no.set_colorkey([0, 0, 0])
+        
+        air_potions_no = inv_font.render(str(player.inventory["air_potions"]), False, [255, 255, 255], [0, 0, 0])
+        air_potions_no.set_colorkey([0, 0, 0])
+        
+        health_potions_no = inv_font.render(str(player.inventory["health_potions"]), False, [255, 255, 255], [0, 0, 0])
+        health_potions_no.set_colorkey([0, 0, 0])
+        
         if player.inventory["speed_potions"] > 0:
             win.blit(potion_sprites[0], [player.inventory_box.x + 16, player.inventory_box.y + 12])
+            win.blit(speed_potions_no, [player.inventory_box.x + 48, player.inventory_box.y + 44])
             
         if player.inventory["air_potions"] > 0:
             win.blit(potion_sprites[1], [player.inventory_box.x + 16 + player.inventory_box.w/4, player.inventory_box.y + 12])
+            win.blit(air_potions_no, [player.inventory_box.x + 48 + player.inventory_box.w/4, player.inventory_box.y + 44])
             
         if player.inventory["health_potions"] > 0:
             win.blit(potion_sprites[2], [player.inventory_box.x + 16 + player.inventory_box.w/2, player.inventory_box.y + 12])
+            win.blit(health_potions_no, [player.inventory_box.x + 48 + player.inventory_box.w/2, player.inventory_box.y + 44])
             
         if pygame.key.get_pressed()[pygame.K_1]:
             player.inv_no = 0
@@ -377,6 +409,15 @@ async def main():
             player.inv_no = 3
             
         pygame.draw.rect(win, [125, 125, 125], pygame.Rect(player.inventory_box.x + (player.inv_no*player.inventory_box.w/4), player.inventory_box.y, player.inventory_box.h, player.inventory_box.h), 4)
+        
+        pygame.draw.rect(win, [75, 200, 75], pygame.Rect(324, 8, (player.health/100)*256, 28))
+        pygame.draw.rect(win, [25, 100, 25], pygame.Rect(324, 8, 256, 28), 4)
+        
+        pygame.draw.rect(win, [75, 75, 200], pygame.Rect(692, 8, (player.air/100)*256, 28))
+        pygame.draw.rect(win, [25, 25, 100], pygame.Rect(692, 8, 256, 28), 4)     
+    
+        win.blit(health_text, [324 + (256-health_text.get_width())/2, 8])
+        win.blit(air_text, [692 + (256-air_text.get_width())/2, 8])
         
         pygame.display.update()
         await asyncio.sleep(0)
