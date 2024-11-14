@@ -293,6 +293,7 @@ async def main():
     
     inv_font = pygame.font.Font("assets/font/yoster.ttf", 20)
     ui_font = pygame.font.Font("assets/font/yoster.ttf", 28)
+    big_font = pygame.font.Font("assets/font/yoster.ttf", 64)
     
     health_text = ui_font.render("HEALTH", False, [255, 255, 255], [0, 0, 0])
     health_text.set_colorkey([0, 0, 0])
@@ -300,10 +301,23 @@ async def main():
     air_text = ui_font.render("AIR", False, [255, 255, 255], [0, 0, 0])
     air_text.set_colorkey([0, 0, 0])
     
+    death_text = big_font.render("YOU DIED!", False, [255, 255, 255], [0, 0, 0])
+    death_text.set_colorkey([0, 0, 0])
+    
     e_pressed = False
+    screenshot = None
+    dark_overlay_surf = pygame.Surface((win.get_width(), win.get_height()))
+    dark_overlay_surf.fill([0, 0, 0])
+    dark_overlay_surf.set_alpha(75)
+    radius = 0
     
     while True:
 
+        if not player.alive:
+            if screenshot is None:
+                screenshot = win.copy()
+            
+        win.fill([0, 0, 0])
         win.blit(bg, [0, 0])
         
         clock.tick(60)
@@ -317,7 +331,9 @@ async def main():
         below_player.clear()
         above_player.clear()
         
-        player.update()
+        
+        if player.alive:
+            player.update()
         
         if (player.rect.y + player.rect.h) > (win.get_height() - 40):
             if player.vel[1] > 0:
@@ -383,7 +399,8 @@ async def main():
         for x in below_player:
             win.blit(crate, [crates[x][0][0] + (win.get_width() - 10*crate.get_width())/2, crates[x][0][1] + 60 + (win.get_height() - len(levels[current_level])*crate.get_height())/2])
             
-        player.render()
+        if player.alive:
+            player.render()
             
         for x in above_player:
             win.blit(crate, [crates[x][0][0] + (win.get_width() - 10*crate.get_width())/2, crates[x][0][1] + 60 + (win.get_height() - len(levels[current_level])*crate.get_height())/2])
@@ -461,6 +478,47 @@ async def main():
         win.blit(health_text, [324 + (256-health_text.get_width())/2, 8])
         win.blit(air_text, [692 + (256-air_text.get_width())/2, 8])
         
+        if not player.alive and screenshot is not None:
+            win.blit(screenshot, [0,0])
+            win.blit(dark_overlay_surf, [0,0])
+            pygame.draw.circle(win, [0, 0, 0], [win.get_width()/2, win.get_height()/2], radius)
+            radius += 15
+            win.blit(death_text, [(win.get_width() - death_text.get_width())/2, (win.get_height() - death_text.get_height())/2])
+            
+            if radius > 1000:
+                
+                radius = 0
+                
+                screenshot = None
+                
+                player = Player()
+
+                above_player = []
+                below_player = []
+
+                levels = [[]]
+                potions = [[]]
+
+                crates = []
+
+                for count, level in enumerate(levels):
+                    
+                    for i in range(6):
+                        
+                        levels[count].append([])
+                        potions[count].append([])
+                        
+                        for j in range(10):
+                            n = random.randint(0, 10)
+                            levels[count][i].append(n)
+                            if n < 4:
+                                potions[count][i].append(random.randint(1, 6))
+                                levels[count][i].append(1)
+                                crates.append([(j*crate.get_width(), i*crate.get_height()), pygame.Rect(j*crate.get_width() + 4 + (win.get_width() - 10*crate.get_width())/2, i*crate.get_height()  + 64 + (win.get_height() - 6*crate.get_height())/2, crate.get_width() - 8, crate.get_height() - 8)])
+                            else:
+                                levels[count][i].append(0)
+                                potions[count][i].append(0)
+                
         pygame.display.update()
         await asyncio.sleep(0)
 asyncio.run(main())
