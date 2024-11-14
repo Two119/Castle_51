@@ -202,6 +202,16 @@ async def main():
             if self.air > 100:
                     self.air = 100
                     
+            if self.air < 0:
+                self.air = 0
+                
+            if self.air <= 0:
+                self.health -= 0.5
+                
+            if self.health <= 0:
+                self.alive = False
+                self.health = 0
+                    
             if self.crate == None:
                 if self.air < 100:
                     self.air += 0.25
@@ -428,7 +438,13 @@ async def main():
                     if player.inventory["air_potions"] > 0:
                         player.inventory["air_potions"] -= 1
                         player.air += 33
-                  
+                        
+                if player.inv_no == 2:
+                    if player.inventory["health_potions"] > 0:
+                        player.inventory["health_potions"] -= 1
+                        player.health += 33
+                        if player.health > 100:
+                            player.health = 100
                 e_pressed = True
                 
         if not pygame.key.get_pressed()[pygame.K_e]:
