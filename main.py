@@ -242,6 +242,82 @@ async def main():
             self.pos[0] += self.vel[0]
             self.pos[1] += self.vel[1]
             
+    class Wizard:
+        def __init__(self):
+            self.pos = [300, 100]
+            self.frame = [0, 0]
+            self.rect = pygame.Rect(self.pos[0]+16, self.pos[1], 112, 128)
+            self.wide_rect = pygame.Rect(self.pos[0] - 8, self.pos[1] - 8, 128, 128)
+            self.dir = 0
+            self.speed = 5
+            self.anim_time = time.time()
+            self.vel = [0, 0]
+            self.mask = pygame.mask.from_surface(pygame.transform.flip(wizard_animations[self.frame[1]].get([self.frame[0], 0]), self.dir, False))
+            self.speed_effect = 0
+        def update_animation(self):
+            if time.time() - self.anim_time >= 0.1:
+                self.frame[0] += 1
+                
+                try:
+                    wizard_animations[self.frame[1]].get([self.frame[0], 0])
+                    
+                except:
+                    self.frame[0] = 0
+                
+                self.anim_time = time.time()
+        
+        def update(self):
+
+            """if pygame.key.get_pressed()[pygame.K_RIGHT]:
+                self.dir = 0
+                self.vel[0] = (self.speed + self.speed_effect)*1
+                self.frame[1] = 1
+                
+            elif pygame.key.get_pressed()[pygame.K_LEFT]:
+                self.dir = 1
+                self.vel[0] = (self.speed + self.speed_effect)*-1
+                self.frame[1] = 1
+                
+            else:
+                self.vel[0] = 0
+                if self.vel[1] == 0:
+                    self.frame[1] = 0
+                    
+            if pygame.key.get_pressed()[pygame.K_UP]:
+                self.vel[1] = (self.speed + self.speed_effect)*-1
+                self.frame[1] = 1
+                
+            elif pygame.key.get_pressed()[pygame.K_DOWN]:
+                self.vel[1] =(self.speed + self.speed_effect)*1
+                self.frame[1] = 1
+                
+            else:
+                self.vel[1] = 0"""
+                
+            self.pos[0] += self.vel[0]
+            self.pos[1] += self.vel[1]
+            
+            try:
+                wizard_animations[self.frame[1]].get([self.frame[0], 0])
+                
+            except:
+                self.frame[0] = 0
+                
+            self.rect = pygame.Rect(self.pos[0], self.pos[1], wizard_animations[self.frame[1]].get([self.frame[0], 0]).get_width(), wizard_animations[self.frame[1]].get([self.frame[0], 0]).get_height())
+            
+            
+            img = pygame.transform.flip(wizard_animations[self.frame[1]].get([self.frame[0], 0]), self.dir, False)
+            self.mask = pygame.mask.from_surface(img)
+            win.blit(img, self.pos)
+            
+            for crate_, rect in crates:
+                if self.rect.colliderect(rect):
+                    if self.mask.overlap(crate_mask, (rect.x - self.pos[0], rect.y - self.pos[1])):
+                        if (rect.y - self.pos[1]) < 172 and (rect.y - self.pos[1]) > 48:
+                            win.blit(crate, (rect.x - 4, rect.y - 4))
+                                  
+            self.update_animation()
+            
     crate = scale_image(pygame.image.load("assets/sprites/crate.png").convert())
     crate.set_colorkey([255, 255, 255])
     crate_mask = pygame.mask.from_surface(crate)
@@ -252,6 +328,8 @@ async def main():
     animation_index = {"idle":0, "run":1, "death":2}
 
     player = Player()
+    
+    wizards = [Wizard()]
 
     above_player = []
     below_player = []
@@ -407,6 +485,9 @@ async def main():
         
         if player.crate != None:
             pygame.draw.rect(win, [255, 255, 255], crates[player.crate][1], 4)
+            
+        for wizard in wizards:
+            wizard.update()
             
         pygame.draw.rect(win, [75, 75, 75], player.inventory_box, 4)
         pygame.draw.line(win, [75, 75, 75], [player.inventory_box.x + (1*player.inventory_box.w/4), player.inventory_box.y], [player.inventory_box.x + (1*player.inventory_box.w/4), player.inventory_box.y + player.inventory_box.h - 4], 4)
