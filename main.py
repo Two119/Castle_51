@@ -254,6 +254,8 @@ async def main():
             self.vel = [0, 0]
             self.mask = pygame.mask.from_surface(pygame.transform.flip(wizard_animations[self.frame[1]].get([self.frame[0], 0]), self.dir, False))
             self.speed_effect = 0
+            self.blit_surf = pygame.Surface((32*4, 36*4))
+            
         def update_animation(self):
             if time.time() - self.anim_time >= 0.1:
                 self.frame[0] += 1
@@ -308,14 +310,27 @@ async def main():
             
             img = pygame.transform.flip(wizard_animations[self.frame[1]].get([self.frame[0], 0]), self.dir, False)
             self.mask = pygame.mask.from_surface(img)
-            win.blit(img, self.pos)
             
             for crate_, rect in crates:
                 if self.rect.colliderect(rect):
-                    if self.mask.overlap(crate_mask, (rect.x - self.pos[0], rect.y - self.pos[1])):
-                        if (rect.y - self.pos[1]) < 172 and (rect.y - self.pos[1]) > 48:
-                            win.blit(crate, (rect.x - 4, rect.y - 4))
+                    if (rect.y - self.pos[1]) < 172 and (rect.y - self.pos[1]) > 48:
+                        overlap_img = self.mask.overlap_mask(crate_mask, (rect.x - self.pos[0], rect.y - self.pos[1])).to_surface(unsetcolor=(0, 0, 0, 0), setcolor = (255,255,255))
+                        img.blit(overlap_img, (-4, 0))
+                        img.blit(overlap_img, (0, -4))
+                        img.blit(overlap_img, (0, 0))
+                        
+            if self.rect.colliderect(player.wide_rect):
+                    if (player.pos[1] - self.pos[1]) < 172 and (player.pos[1] - self.pos[1]) > 24:
+                        overlap_img = self.mask.overlap_mask(player.mask, (player.pos[0] - self.pos[0], player.pos[1] - self.pos[1])).to_surface(unsetcolor=(0, 0, 0, 0), setcolor = (255,255,255))
+                        img.blit(overlap_img, (-4, 0))
+                        img.blit(overlap_img, (0, -4))
+                        img.blit(overlap_img, (0, 0))
                                   
+            swap_color(img, [255, 255, 255], [0, 0, 0])
+            
+            img.set_colorkey([0, 0, 0])
+            
+            win.blit(img, self.pos)
             self.update_animation()
             
     crate = scale_image(pygame.image.load("assets/sprites/crate.png").convert())
