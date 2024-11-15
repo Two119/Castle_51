@@ -320,10 +320,8 @@ async def main():
                         img.blit(overlap_img, (0, 0))
                         
             if self.rect.colliderect(player.wide_rect):
-                    if (player.pos[1] - self.pos[1]) < 172 and (player.pos[1] - self.pos[1]) > 24:
+                    if (player.pos[1] - self.pos[1]) < 172 and (player.pos[1] - self.pos[1]) > 16:
                         overlap_img = self.mask.overlap_mask(player.mask, (player.pos[0] - self.pos[0], player.pos[1] - self.pos[1])).to_surface(unsetcolor=(0, 0, 0, 0), setcolor = (255,255,255))
-                        img.blit(overlap_img, (-4, 0))
-                        img.blit(overlap_img, (0, -4))
                         img.blit(overlap_img, (0, 0))
                                   
             swap_color(img, [255, 255, 255], [0, 0, 0])
