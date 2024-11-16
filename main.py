@@ -241,7 +241,10 @@ async def main():
         
             self.pos[0] += self.vel[0]
             self.pos[1] += self.vel[1]
-            
+    
+    staff = scale_image(pygame.image.load("assets/sprites/Wizard/staff.png").convert())
+    staff.set_colorkey((255, 255, 255))
+    
     class Wizard:
         def __init__(self):
             self.pos = [300, 100]
@@ -256,6 +259,7 @@ async def main():
             self.speed_effect = 0
             self.blit_surf = pygame.Surface((32*4, 36*4))
             self.angle = 0
+            self.staff_pos = [0,0]
             
         def update_animation(self):
             if time.time() - self.anim_time >= 0.1:
@@ -323,6 +327,10 @@ async def main():
             img = pygame.transform.flip(wizard_animations[self.frame[1]].get([self.frame[0], 0]), self.dir, False)
             self.mask = pygame.mask.from_surface(img)
             
+            staff_img = pygame.transform.rotate(staff, 290-self.angle)
+            staff_mask = pygame.mask.from_surface(staff_img)
+            self.staff_pos = (self.pos[0] + (img.get_width() - staff_img.get_width())/2, self.pos[1]  + (img.get_height() - staff_img.get_height())/2)
+            #staff_pos
             for crate_, rect in crates:
                 if self.wide_rect.colliderect(rect):
                     if (rect.y - self.pos[1]) < 172 and (rect.y - self.pos[1]) > 48:
@@ -330,6 +338,9 @@ async def main():
                         img.blit(overlap_img, (-4, 0))
                         img.blit(overlap_img, (0, -4))
                         img.blit(overlap_img, (0, 0))
+
+                        overlap_img2 = staff_mask.overlap_mask(crate_mask, (rect.x - self.staff_pos[0], rect.y - self.staff_pos[1])).to_surface(unsetcolor=(0, 0, 0, 0), setcolor = (255,255,255))
+                        staff_img.blit(overlap_img2, (0, 0))
                         
                 if crate_mask.overlap(self.mask, (self.pos[0] - rect.x, self.pos[1] - rect.y)):
                     if (rect.y - self.rect.y) < 96 and (rect.y - self.rect.y) > 0:
@@ -354,10 +365,13 @@ async def main():
                         img.blit(overlap_img, (0, 0))
                                   
             swap_color(img, [255, 255, 255], [0, 0, 0])
+            swap_color(staff_img, [255, 255, 255], [0, 0, 0])
             
             img.set_colorkey([0, 0, 0])
+            staff_img.set_colorkey([0, 0, 0])
 
             win.blit(img, self.pos)
+            win.blit(staff_img, self.staff_pos)
             
             self.pos[0] += self.vel[0]
             self.pos[1] += self.vel[1]
