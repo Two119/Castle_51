@@ -255,6 +255,7 @@ async def main():
             self.mask = pygame.mask.from_surface(pygame.transform.flip(wizard_animations[self.frame[1]].get([self.frame[0], 0]), self.dir, False))
             self.speed_effect = 0
             self.blit_surf = pygame.Surface((32*4, 36*4))
+            self.angle = 0
             
         def update_animation(self):
             if time.time() - self.anim_time >= 0.1:
@@ -270,7 +271,12 @@ async def main():
         
         def update(self):
 
-            """if pygame.key.get_pressed()[pygame.K_RIGHT]:
+            """if self.vel[0] == 0 and self.vel[1] == 0:
+                self.frame[1] = 0
+            else:
+                self.frame[1] = 1
+            
+            if pygame.key.get_pressed()[pygame.K_RIGHT]:
                 self.dir = 0
                 self.vel[0] = (self.speed + self.speed_effect)*1
                 self.frame[1] = 1
@@ -295,9 +301,15 @@ async def main():
                 
             else:
                 self.vel[1] = 0"""
+            
+            if not self.wide_rect.colliderect(player.wide_rect):
+                self.angle = angle_between((self.pos, player.pos)) 
+                self.vel = [self.speed*math.cos(math.radians(self.angle)), self.speed*math.sin(math.radians(self.angle))]
+                self.frame[1] = 1
                 
-            self.pos[0] += self.vel[0]
-            self.pos[1] += self.vel[1]
+            else:
+                self.vel = [0,0]
+                self.frame[1] = 0
             
             try:
                 wizard_animations[self.frame[1]].get([self.frame[0], 0])
@@ -306,18 +318,35 @@ async def main():
                 self.frame[0] = 0
                 
             self.rect = pygame.Rect(self.pos[0], self.pos[1], wizard_animations[self.frame[1]].get([self.frame[0], 0]).get_width(), wizard_animations[self.frame[1]].get([self.frame[0], 0]).get_height())
-            
+            self.wide_rect = pygame.Rect(self.pos[0] - 32, self.pos[1] - 32, wizard_animations[self.frame[1]].get([self.frame[0], 0]).get_width() + 64, wizard_animations[self.frame[1]].get([self.frame[0], 0]).get_height() + 64)
             
             img = pygame.transform.flip(wizard_animations[self.frame[1]].get([self.frame[0], 0]), self.dir, False)
             self.mask = pygame.mask.from_surface(img)
             
             for crate_, rect in crates:
-                if self.rect.colliderect(rect):
+                if self.wide_rect.colliderect(rect):
                     if (rect.y - self.pos[1]) < 172 and (rect.y - self.pos[1]) > 48:
                         overlap_img = self.mask.overlap_mask(crate_mask, (rect.x - self.pos[0], rect.y - self.pos[1])).to_surface(unsetcolor=(0, 0, 0, 0), setcolor = (255,255,255))
                         img.blit(overlap_img, (-4, 0))
                         img.blit(overlap_img, (0, -4))
                         img.blit(overlap_img, (0, 0))
+                        
+                if crate_mask.overlap(self.mask, (self.pos[0] - rect.x, self.pos[1] - rect.y)):
+                    if (rect.y - self.rect.y) < 96 and (rect.y - self.rect.y) > 0:
+                            if self.vel[1] > 0:
+                                self.vel[1] = 0
+                            if (rect.y - self.rect.y) < 72 and (rect.y - self.rect.y) > 0:
+                                if self.vel[0] != 0:
+                                    if self.pos[0] - rect.x > 0:
+                                        if self.vel[0] < 0:
+                                            self.vel[0] = 0
+                                    if self.pos[0] - rect.x < 0:
+                                        if self.vel[0] > 0:
+                                            self.vel[0] = 0
+                                
+                    if (self.rect.y - rect.y) < 16 and (self.rect.y - rect.y) > 0:
+                        if self.vel[1] < 0:
+                            self.vel[1] = 0
                         
             if self.rect.colliderect(player.wide_rect):
                     if (player.pos[1] - self.pos[1]) < 172 and (player.pos[1] - self.pos[1]) > 16:
@@ -327,8 +356,12 @@ async def main():
             swap_color(img, [255, 255, 255], [0, 0, 0])
             
             img.set_colorkey([0, 0, 0])
-            
+
             win.blit(img, self.pos)
+            
+            self.pos[0] += self.vel[0]
+            self.pos[1] += self.vel[1]
+            
             self.update_animation()
             
     crate = scale_image(pygame.image.load("assets/sprites/crate.png").convert())
@@ -466,7 +499,7 @@ async def main():
                             player.crate = count
                             
                             if (rect.y - player.rect.y) < 64 and (rect.y - player.rect.y) > 0:
-                                player.pos[1] -= 48 - (player.rect.y - player.rect.y)
+                                player.pos[1] = rect.y - 64
                     
                     if (rect.y - player.rect.y) < 64 and (rect.y - player.rect.y) > 0:
                         if player.vel[1] > 0:
