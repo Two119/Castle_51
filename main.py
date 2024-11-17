@@ -421,6 +421,7 @@ async def main():
                                 if c < player.crate:
                                     player.crate -= 1
                         crates.pop(c)
+                        explosions.append([(rect.x + crate.get_width()/2, rect.y + crate.get_height()/2), 0, time.time()])
                         break
                     c += 1
                 win.blit(pygame.transform.rotate(self.bullet_sprite, 360 - bullet[1]), (bullet[0].x, bullet[0].y))    
@@ -433,11 +434,15 @@ async def main():
     crate = scale_image(pygame.image.load("assets/sprites/crate.png").convert())
     crate.set_colorkey([255, 255, 255])
     crate_mask = pygame.mask.from_surface(crate)
+    
+    crate_explosion = SpriteSheet(scale_image(pygame.image.load("assets/sprites/crate_explosion.png").convert()), (6, 1), (255, 255, 255))
+    
+    explosions = []
 
     knight_animations = [SpriteSheet(scale_image(pygame.image.load("assets/sprites/Knight/Idle/Idle-Sheet.png").convert()), [4, 1], [255, 255, 255]), SpriteSheet(scale_image(pygame.image.load("assets/sprites/Knight/Run/Run-Sheet.png").convert()), [6, 1], [255, 255, 255]), SpriteSheet(scale_image(pygame.image.load("assets/sprites/Knight/Death/Death-Sheet.png").convert()), [6, 1], [255, 255, 255])]
     wizard_animations = [SpriteSheet(scale_image(pygame.image.load("assets/sprites/Wizard/Idle/Idle-Sheet.png").convert()), [4, 1], [255, 255, 255]), SpriteSheet(scale_image(pygame.image.load("assets/sprites/Wizard/Run/Run-Sheet.png").convert()), [6, 1], [255, 255, 255]), SpriteSheet(scale_image(pygame.image.load("assets/sprites/Wizard/Death/Death-Sheet.png").convert()), [6, 1], [255, 255, 255])]
 
-    animation_index = {"idle":0, "run":1, "death":2}
+    #animation_index = {"idle":0, "run":1, "death":2}
 
     player = Player()
     
@@ -521,7 +526,6 @@ async def main():
         below_player.clear()
         above_player.clear()
         
-        
         if player.alive:
             player.update()
         
@@ -601,6 +605,14 @@ async def main():
         for wizard in wizards:
             wizard.update()
             
+        for explosion in explosions:
+            win.blit(crate_explosion.get((explosion[1], 0)), (explosion[0][0] - crate_explosion.size[1]/2, explosion[0][1] - crate_explosion.size[0]/2)) 
+            if time.time() - explosion[2] >= 0.05:
+                explosion[2] = time.time()
+                explosion[1] += 1
+                if explosion[1] > 5:
+                    explosion[1] = 5 
+        
         pygame.draw.rect(win, [75, 75, 75], player.inventory_box, 4)
         pygame.draw.line(win, [75, 75, 75], [player.inventory_box.x + (1*player.inventory_box.w/4), player.inventory_box.y], [player.inventory_box.x + (1*player.inventory_box.w/4), player.inventory_box.y + player.inventory_box.h - 4], 4)
         pygame.draw.line(win, [75, 75, 75], [player.inventory_box.x + (2*player.inventory_box.w/4), player.inventory_box.y], [player.inventory_box.x + (2*player.inventory_box.w/4), player.inventory_box.y + player.inventory_box.h - 4], 4)
@@ -695,6 +707,8 @@ async def main():
                 potions = [[]]
 
                 crates = []
+                
+                explosions.clear()
 
                 for count, level in enumerate(levels):
                     
