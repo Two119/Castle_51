@@ -260,6 +260,8 @@ async def main():
             self.blit_surf = pygame.Surface((32*4, 36*4))
             self.angle = 0
             self.staff_pos = [0,0]
+            self.bullet_delay = time.time()
+            self.bullet_repeat_time = 0.4
             
         def update_animation(self):
             if time.time() - self.anim_time >= 0.1:
@@ -376,8 +378,47 @@ async def main():
             self.pos[0] += self.vel[0]
             self.pos[1] += self.vel[1]
             
-            self.update_animation()
+            if time.time() - self.bullet_delay >= self.bullet_repeat_time:
+                self.bullet_delay = time.time()
+                bullet_manager.add_bullet((pygame.Rect(self.pos[0] + 32, self.pos[1] + 32, 16, 12), self.angle))
             
+            self.update_animation()
+    
+    class BulletManager:
+        def __init__(self):
+            self.bullets = []
+            self.bullet_sprite = scale_image(pygame.image.load("assets/sprites/bullet.png").convert())
+            self.bullet_sprite.set_colorkey((0, 0, 0))
+            self.bullet_mask = pygame.mask.from_surface(self.bullet_sprite)
+            self.bullet_speed = 7
+        def add_bullet(self, bullet):
+            self.bullets.append(bullet)
+        def update(self):
+            for bullet in self.bullets:
+                if bullet[0].x < 0-self.bullet_sprite.get_width() or bullet[0].x > win.get_width() or bullet[0].y < 0-self.bullet_sprite.get_height() or bullet[0].y > win.get_height():
+                    self.bullets.remove(bullet)
+                    continue
+                if self.bullet_mask.overlap(player.mask, (player.pos[0]-bullet[0].x, player.pos[1]-bullet[0].y)):
+                    self.bullets.remove(bullet)
+                    player.health -= 25
+                    continue
+                
+                c = -1  
+                for crate_, rect in crates:
+                    c += 1
+                    if bullet[0].colliderect(rect):
+                        self.bullets.remove(bullet)
+                        crates.pop(c)
+                        if player.crate == c:
+                            player.crate = None
+                        break
+                win.blit(pygame.transform.rotate(self.bullet_sprite, bullet[1]), (bullet[0].x, bullet[0].y))    
+                
+                bullet[0].x += self.bullet_speed * math.cos(math.radians(bullet[1]))
+                bullet[0].y += self.bullet_speed * math.sin(math.radians(bullet[1]))
+    
+    bullet_manager = BulletManager()
+    
     crate = scale_image(pygame.image.load("assets/sprites/crate.png").convert())
     crate.set_colorkey([255, 255, 255])
     crate_mask = pygame.mask.from_surface(crate)
@@ -607,6 +648,8 @@ async def main():
                 
         if not pygame.key.get_pressed()[pygame.K_e]:
             e_pressed = False
+        
+        bullet_manager.update()
              
         pygame.draw.rect(win, [125, 125, 125], pygame.Rect(player.inventory_box.x + (player.inv_no*player.inventory_box.w/4), player.inventory_box.y, player.inventory_box.h, player.inventory_box.h), 4)
         
