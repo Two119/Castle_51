@@ -261,7 +261,7 @@ async def main():
             self.angle = 0
             self.staff_pos = [0,0]
             self.bullet_delay = time.time()
-            self.bullet_repeat_time = 0.4
+            self.bullet_repeat_time = 1
             
         def update_animation(self):
             if time.time() - self.anim_time >= 0.1:
@@ -316,7 +316,7 @@ async def main():
             else:
                 self.vel = [0,0]
                 self.frame[1] = 0
-            
+                self.angle = angle_between((self.pos, player.pos))
             try:
                 wizard_animations[self.frame[1]].get([self.frame[0], 0])
                 
@@ -398,20 +398,24 @@ async def main():
                 if bullet[0].x < 0-self.bullet_sprite.get_width() or bullet[0].x > win.get_width() or bullet[0].y < 0-self.bullet_sprite.get_height() or bullet[0].y > win.get_height():
                     self.bullets.remove(bullet)
                     continue
-                if self.bullet_mask.overlap(player.mask, (player.pos[0]-bullet[0].x, player.pos[1]-bullet[0].y)):
+                if self.bullet_mask.overlap(player.mask, (player.pos[0]-bullet[0].x, player.pos[1]-bullet[0].y)) and player.crate == None:
                     self.bullets.remove(bullet)
                     player.health -= 25
                     continue
                 
-                c = -1  
+                c = 0  
                 for crate_, rect in crates:
-                    c += 1
                     if bullet[0].colliderect(rect):
                         self.bullets.remove(bullet)
+                        if player.crate != None:
+                            if c == player.crate:
+                                player.crate = None
+                            else:
+                                if c < player.crate:
+                                    player.crate -= 1
                         crates.pop(c)
-                        if player.crate == c:
-                            player.crate = None
                         break
+                    c += 1
                 win.blit(pygame.transform.rotate(self.bullet_sprite, bullet[1]), (bullet[0].x, bullet[0].y))    
                 
                 bullet[0].x += self.bullet_speed * math.cos(math.radians(bullet[1]))
