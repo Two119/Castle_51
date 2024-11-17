@@ -261,7 +261,8 @@ async def main():
             self.angle = 0
             self.staff_pos = [0,0]
             self.bullet_delay = time.time()
-            self.bullet_repeat_time = 1
+            self.bullet_repeat_time = 0.8
+            self.b_pos = [0, 0]
             
         def update_animation(self):
             if time.time() - self.anim_time >= 0.1:
@@ -333,6 +334,12 @@ async def main():
             staff_mask = pygame.mask.from_surface(staff_img)
             self.staff_pos = (self.pos[0] + (img.get_width() - staff_img.get_width())/2, self.pos[1]  + (img.get_height() - staff_img.get_height())/2)
             #staff_pos
+            
+            for j in range(0, staff_img.get_height(), 4):
+                for i in range(0, staff_img.get_width(), 4):
+                    if staff_img.get_at((i, j)).r == 240:
+                        self.b_pos = [self.staff_pos[0] + i, self.staff_pos[1] + j]
+            
             for crate_, rect in crates:
                 if self.wide_rect.colliderect(rect):
                     if (rect.y - self.pos[1]) < 172 and (rect.y - self.pos[1]) > 48:
@@ -379,8 +386,8 @@ async def main():
             self.pos[1] += self.vel[1]
             
             if time.time() - self.bullet_delay >= self.bullet_repeat_time:
-                self.bullet_delay = time.time()
-                bullet_manager.add_bullet((pygame.Rect(self.pos[0] + 32, self.pos[1] + 32, 16, 12), self.angle))
+                self.bullet_delay = time.time()     
+                bullet_manager.add_bullet((pygame.Rect(self.b_pos[0], self.b_pos[1], 16, 12), angle_between((self.staff_pos, player.pos))))
             
             self.update_animation()
     
@@ -416,7 +423,7 @@ async def main():
                         crates.pop(c)
                         break
                     c += 1
-                win.blit(pygame.transform.rotate(self.bullet_sprite, bullet[1]), (bullet[0].x, bullet[0].y))    
+                win.blit(pygame.transform.rotate(self.bullet_sprite, 360 - bullet[1]), (bullet[0].x, bullet[0].y))    
                 
                 bullet[0].x += self.bullet_speed * math.cos(math.radians(bullet[1]))
                 bullet[0].y += self.bullet_speed * math.sin(math.radians(bullet[1]))
