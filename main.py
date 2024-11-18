@@ -70,6 +70,7 @@ async def main():
             self.rect = pygame.Rect(self.pos[0]+16, self.pos[1], 112, 128)
             self.wide_rect = pygame.Rect(self.pos[0] - 8, self.pos[1] - 8, 128, 128)
             self.alive = True
+            self.win = False
             self.has_artifact = False
             self.dir = 0
             self.speed = 5
@@ -522,6 +523,8 @@ async def main():
     win_text = big_font.render("YOU WIN!", False, [255, 255, 255], [0, 0, 0])
     win_text.set_colorkey([0, 0, 0])
     
+    win_rects = [pygame.Rect(1152, 0, 128, 156)]
+    
     e_pressed = False
     screenshot = None
     dark_overlay_surf = pygame.Surface((win.get_width(), win.get_height()))
@@ -720,12 +723,21 @@ async def main():
         win.blit(health_text, [324 + (256-health_text.get_width())/2, 8])
         win.blit(air_text, [692 + (256-air_text.get_width())/2, 8])
         
+        if player.rect.colliderect(win_rects[current_level]) and player.has_artifact:
+            player.alive = False
+            player.win = True
+            current_level += 1
+        
         if not player.alive and screenshot is not None:
             win.blit(screenshot, [0,0])
             win.blit(dark_overlay_surf, [0,0])
             pygame.draw.circle(win, [0, 0, 0], [win.get_width()/2, win.get_height()/2], radius)
             radius += 15
-            win.blit(death_text, [(win.get_width() - death_text.get_width())/2, (win.get_height() - death_text.get_height())/2])
+            
+            if player.win:
+                win.blit(win_text, [(win.get_width() - win_text.get_width())/2, (win.get_height() - win_text.get_height())/2])
+            else:
+                win.blit(death_text, [(win.get_width() - death_text.get_width())/2, (win.get_height() - death_text.get_height())/2])
             
             if radius > 1000:
                 
