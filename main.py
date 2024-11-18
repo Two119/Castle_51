@@ -38,8 +38,7 @@ class SpriteSheet:
 class Button:
     def __init__(self, position, textures, function):
         self.textures = textures
-        self.onlick = function[0]
-        self.args = function[1]
+        self.onlick = function
         self.pos = position
         self.current = 0
         self.rect = self.textures[self.current].get_rect(topleft=self.pos)
@@ -56,12 +55,32 @@ class Button:
         if self.rect.collidepoint(pygame.mouse.get_pos()):
             if pygame.mouse.get_pressed()[0]:
                 if not self.delaying:
-                    self.onlick(self.args)
+                    self.onlick()
                     self.clicksound.play()
             self.current = 1
         win.blit(self.textures[self.current], self.pos)
         self.rect = self.textures[self.current].get_rect(topleft=self.pos)
+
+global screen_state
+screen_state = 0
         
+def play():
+    global screen_state
+    screen_state = 1
+    
+def show_credits():
+    global screen_state
+    screen_state = 2
+        
+button_spritesheet = SpriteSheet(scale_image(pygame.image.load("assets/sprites/buttons.png").convert()), [2, 1], [0, 0, 0])
+button_center_pos = [(win.get_width() - button_spritesheet.size[0])/2, (win.get_height() - button_spritesheet.size[1])/2]
+
+title_screen_font = pygame.font.Font("assets/font/yoster.ttf", 30)
+title_screen_buttons = [Button(button_center_pos, button_spritesheet.sheet[0], play), Button([button_center_pos[0], button_center_pos[1] + 128], button_spritesheet.sheet[0], show_credits)]
+title_screen_text = [[title_screen_font.render("Play", False, [255, 255, 255], [0, 0, 0]), [title_screen_buttons[0].pos[0] + 24, title_screen_buttons[0].pos[1] + 14]], [title_screen_font.render("Credit", False, [255, 255, 255], [0, 0, 0]), [title_screen_buttons[1].pos[0] + 10, title_screen_buttons[1].pos[1] + 14]]]
+title_screen_text[0][0].set_colorkey((0, 0, 0))
+title_screen_text[1][0].set_colorkey((0, 0, 0))
+
 async def main():    
     class Player:
         def __init__(self):
@@ -546,238 +565,243 @@ async def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
-        
-        count = -1
-        
-        below_player.clear()
-        above_player.clear()
-        
-        if player.alive:
-            player.update()
-        
-        if (player.rect.y + player.rect.h) > (win.get_height() - 40):
-            if player.vel[1] > 0:
-                player.vel[1] = 0
                 
-        if (player.rect.y) < (128):
-            if player.vel[1] < 0:
-                player.vel[1] = 0
-                
-        if (player.rect.x) < (40):
-            if player.vel[0] < 0:
-                player.vel[0] = 0
-                
-        if (player.rect.x + player.rect.w) > (win.get_width() - 40):
-            if player.vel[0] > 0:
-                player.vel[0] = 0
-        
-        if not (pygame.key.get_pressed()[pygame.K_LCTRL] or pygame.key.get_pressed()[pygame.K_RCTRL]):
-            ctrl_pressed = False
-        
-        for crate_, rect in crates:
-            count += 1
-            #pygame.draw.rect(win, [255, 0, 0], rect)
-            if rect.colliderect(player.wide_rect):
-                if rect.y < player.rect.y:
-                    below_player.append(count)
+        if screen_state == 1:
+            count = -1
+            
+            below_player.clear()
+            above_player.clear()
+            
+            if player.alive:
+                player.update()
+            
+            if (player.rect.y + player.rect.h) > (win.get_height() - 40):
+                if player.vel[1] > 0:
+                    player.vel[1] = 0
+                    
+            if (player.rect.y) < (128):
+                if player.vel[1] < 0:
+                    player.vel[1] = 0
+                    
+            if (player.rect.x) < (40):
+                if player.vel[0] < 0:
+                    player.vel[0] = 0
+                    
+            if (player.rect.x + player.rect.w) > (win.get_width() - 40):
+                if player.vel[0] > 0:
+                    player.vel[0] = 0
+            
+            if not (pygame.key.get_pressed()[pygame.K_LCTRL] or pygame.key.get_pressed()[pygame.K_RCTRL]):
+                ctrl_pressed = False
+            
+            for crate_, rect in crates:
+                count += 1
+                #pygame.draw.rect(win, [255, 0, 0], rect)
+                if rect.colliderect(player.wide_rect):
+                    if rect.y < player.rect.y:
+                        below_player.append(count)
+                    else:
+                        above_player.append(count)
+                        
+                    if (rect.y + rect.h) < (player.rect.y + player.rect.h):
+                        below_player.append(count)
+                        if count in above_player:
+                            above_player.remove(count)
+                    
+                    if crate_mask.overlap(player.mask, [player.pos[0] - rect.x, player.pos[1] - rect.y]):
+                        if (pygame.key.get_pressed()[pygame.K_LCTRL] or pygame.key.get_pressed()[pygame.K_RCTRL]) and not ctrl_pressed:
+                            ctrl_pressed = True
+                            if player.crate == None:
+                                player.crate = count
+                                
+                                if (rect.y - player.rect.y) < 64 and (rect.y - player.rect.y) > 0:
+                                    player.pos[1] = rect.y - 64
+                        
+                        if (rect.y - player.rect.y) < 64 and (rect.y - player.rect.y) > 0:
+                            if player.vel[1] > 0:
+                                player.vel[1] = 0
+                            if (rect.y - player.rect.y) < 48 and (rect.y - player.rect.y) > 0:
+                                if player.vel[0] != 0:
+                                    if player.pos[0] - rect.x > 0:
+                                        if player.vel[0] < 0:
+                                            player.vel[0] = 0
+                                    if player.pos[0] - rect.x < 0:
+                                        if player.vel[0] > 0:
+                                            player.vel[0] = 0
+                                
+                        if (player.rect.y - rect.y) < 28 and (player.rect.y - rect.y) > 0:
+                            if player.vel[1] < 0:
+                                player.vel[1] = 0
+                    
                 else:
-                    above_player.append(count)
-                    
-                if (rect.y + rect.h) < (player.rect.y + player.rect.h):
                     below_player.append(count)
-                    if count in above_player:
-                        above_player.remove(count)
-                
-                if crate_mask.overlap(player.mask, [player.pos[0] - rect.x, player.pos[1] - rect.y]):
-                    if (pygame.key.get_pressed()[pygame.K_LCTRL] or pygame.key.get_pressed()[pygame.K_RCTRL]) and not ctrl_pressed:
-                        ctrl_pressed = True
-                        if player.crate == None:
-                            player.crate = count
-                            
-                            if (rect.y - player.rect.y) < 64 and (rect.y - player.rect.y) > 0:
-                                player.pos[1] = rect.y - 64
-                    
-                    if (rect.y - player.rect.y) < 64 and (rect.y - player.rect.y) > 0:
-                        if player.vel[1] > 0:
-                            player.vel[1] = 0
-                        if (rect.y - player.rect.y) < 48 and (rect.y - player.rect.y) > 0:
-                            if player.vel[0] != 0:
-                                if player.pos[0] - rect.x > 0:
-                                    if player.vel[0] < 0:
-                                        player.vel[0] = 0
-                                if player.pos[0] - rect.x < 0:
-                                    if player.vel[0] > 0:
-                                        player.vel[0] = 0
-                            
-                    if (player.rect.y - rect.y) < 28 and (player.rect.y - rect.y) > 0:
-                        if player.vel[1] < 0:
-                            player.vel[1] = 0
-                
-            else:
-                below_player.append(count)
-        
-        for explosion in explosions:
-            win.blit(crate_explosion.get((explosion[1], 0)), (explosion[0][0] - crate_explosion.size[1]/2, explosion[0][1] - crate_explosion.size[0]/2)) 
-            if time.time() - explosion[2] >= 0.05:
-                explosion[2] = time.time()
-                explosion[1] += 1
-                if explosion[1] > 5:
-                    explosion[1] = 5 
-                    
-        if artifact == None:
-            if player.crate == artifact_crate:
-                player.has_artifact = True
-        else:
-            if not player.has_artifact:
-                win.blit(key, (artifact.x, artifact.y))
-                if player.rect.colliderect(artifact):
+            
+            for explosion in explosions:
+                win.blit(crate_explosion.get((explosion[1], 0)), (explosion[0][0] - crate_explosion.size[1]/2, explosion[0][1] - crate_explosion.size[0]/2)) 
+                if time.time() - explosion[2] >= 0.05:
+                    explosion[2] = time.time()
+                    explosion[1] += 1
+                    if explosion[1] > 5:
+                        explosion[1] = 5 
+                        
+            if artifact == None:
+                if player.crate == artifact_crate:
                     player.has_artifact = True
-        
-        for x in below_player:
-            win.blit(crate, [crates[x][0][0] + (win.get_width() - 10*crate.get_width())/2, crates[x][0][1] + 60 + (win.get_height() - len(levels[current_level])*crate.get_height())/2])
-            
-        if player.alive:
-            player.render()
-            
-        for x in above_player:
-            win.blit(crate, [crates[x][0][0] + (win.get_width() - 10*crate.get_width())/2, crates[x][0][1] + 60 + (win.get_height() - len(levels[current_level])*crate.get_height())/2])
-        
-        if player.crate != None:
-            pygame.draw.rect(win, [255, 255, 255], crates[player.crate][1], 4)
-            
-        for wizard in wizards:
-            wizard.update()
-        
-        pygame.draw.rect(win, [75, 75, 75], player.inventory_box, 4)
-        pygame.draw.line(win, [75, 75, 75], [player.inventory_box.x + (1*player.inventory_box.w/4), player.inventory_box.y], [player.inventory_box.x + (1*player.inventory_box.w/4), player.inventory_box.y + player.inventory_box.h - 4], 4)
-        pygame.draw.line(win, [75, 75, 75], [player.inventory_box.x + (2*player.inventory_box.w/4), player.inventory_box.y], [player.inventory_box.x + (2*player.inventory_box.w/4), player.inventory_box.y + player.inventory_box.h - 4], 4)
-        pygame.draw.line(win, [75, 75, 75], [player.inventory_box.x + (3*player.inventory_box.w/4), player.inventory_box.y], [player.inventory_box.x + (3*player.inventory_box.w/4), player.inventory_box.y + player.inventory_box.h - 4], 4)
-        
-        speed_potions_no = inv_font.render(str(player.inventory["speed_potions"]), False, [255, 255, 255], [0, 0, 0])
-        speed_potions_no.set_colorkey([0, 0, 0])
-        
-        air_potions_no = inv_font.render(str(player.inventory["air_potions"]), False, [255, 255, 255], [0, 0, 0])
-        air_potions_no.set_colorkey([0, 0, 0])
-        
-        health_potions_no = inv_font.render(str(player.inventory["health_potions"]), False, [255, 255, 255], [0, 0, 0])
-        health_potions_no.set_colorkey([0, 0, 0])
-        
-        if player.inventory["speed_potions"] > 0:
-            win.blit(potion_sprites[0], [player.inventory_box.x + 16, player.inventory_box.y + 12])
-            win.blit(speed_potions_no, [player.inventory_box.x + 48, player.inventory_box.y + 44])
-            
-        if player.inventory["air_potions"] > 0:
-            win.blit(potion_sprites[1], [player.inventory_box.x + 16 + player.inventory_box.w/4, player.inventory_box.y + 12])
-            win.blit(air_potions_no, [player.inventory_box.x + 48 + player.inventory_box.w/4, player.inventory_box.y + 44])
-            
-        if player.inventory["health_potions"] > 0:
-            win.blit(potion_sprites[2], [player.inventory_box.x + 16 + player.inventory_box.w/2, player.inventory_box.y + 12])
-            win.blit(health_potions_no, [player.inventory_box.x + 48 + player.inventory_box.w/2, player.inventory_box.y + 44])
-            
-        if player.has_artifact:
-            win.blit(key, [player.inventory_box.x + 1 + player.inventory_box.w - key.get_width(), player.inventory_box.y + 0.5])
-            
-        if pygame.key.get_pressed()[pygame.K_1]:
-            player.inv_no = 0
-        if pygame.key.get_pressed()[pygame.K_2]:
-            player.inv_no = 1
-        if pygame.key.get_pressed()[pygame.K_3]:
-            player.inv_no = 2
-        if pygame.key.get_pressed()[pygame.K_4]:
-            player.inv_no = 3
-            
-        if not e_pressed:
-            if pygame.key.get_pressed()[pygame.K_e]:
-                if player.inv_no == 0:
-                    if player.inventory["speed_potions"] > 0:
-                        player.inventory["speed_potions"] -= 1
-                        player.speed_effect = 2.5
-                        player.speed_time = time.time()
-                        
-                if player.inv_no == 1:
-                    if player.inventory["air_potions"] > 0:
-                        player.inventory["air_potions"] -= 1
-                        player.air += 33
-                        
-                if player.inv_no == 2:
-                    if player.inventory["health_potions"] > 0:
-                        player.inventory["health_potions"] -= 1
-                        player.health += 33
-                        if player.health > 100:
-                            player.health = 100
-                e_pressed = True
-                
-        if not pygame.key.get_pressed()[pygame.K_e]:
-            e_pressed = False
-        
-        bullet_manager.update()
-             
-        pygame.draw.rect(win, [125, 125, 125], pygame.Rect(player.inventory_box.x + (player.inv_no*player.inventory_box.w/4), player.inventory_box.y, player.inventory_box.h, player.inventory_box.h), 4)
-        
-        pygame.draw.rect(win, [75, 200, 75], pygame.Rect(324, 8, (player.health/100)*256, 28))
-        pygame.draw.rect(win, [25, 100, 25], pygame.Rect(324, 8, 256, 28), 4)
-        
-        pygame.draw.rect(win, [75, 75, 200], pygame.Rect(692, 8, (player.air/100)*256, 28))
-        pygame.draw.rect(win, [25, 25, 100], pygame.Rect(692, 8, 256, 28), 4)     
-    
-        win.blit(health_text, [324 + (256-health_text.get_width())/2, 8])
-        win.blit(air_text, [692 + (256-air_text.get_width())/2, 8])
-        
-        if player.rect.colliderect(win_rects[current_level]) and player.has_artifact:
-            player.alive = False
-            player.win = True
-            current_level += 1
-        
-        if not player.alive and screenshot is not None:
-            win.blit(screenshot, [0,0])
-            win.blit(dark_overlay_surf, [0,0])
-            pygame.draw.circle(win, [0, 0, 0], [win.get_width()/2, win.get_height()/2], radius)
-            radius += 15
-            
-            if player.win:
-                win.blit(win_text, [(win.get_width() - win_text.get_width())/2, (win.get_height() - win_text.get_height())/2])
             else:
-                win.blit(death_text, [(win.get_width() - death_text.get_width())/2, (win.get_height() - death_text.get_height())/2])
+                if not player.has_artifact:
+                    win.blit(key, (artifact.x, artifact.y))
+                    if player.rect.colliderect(artifact):
+                        player.has_artifact = True
             
-            if radius > 1000:
+            for x in below_player:
+                win.blit(crate, [crates[x][0][0] + (win.get_width() - 10*crate.get_width())/2, crates[x][0][1] + 60 + (win.get_height() - len(levels[current_level])*crate.get_height())/2])
                 
-                radius = 0
+            if player.alive:
+                player.render()
                 
-                screenshot = None
+            for x in above_player:
+                win.blit(crate, [crates[x][0][0] + (win.get_width() - 10*crate.get_width())/2, crates[x][0][1] + 60 + (win.get_height() - len(levels[current_level])*crate.get_height())/2])
+            
+            if player.crate != None:
+                pygame.draw.rect(win, [255, 255, 255], crates[player.crate][1], 4)
                 
-                player = Player()
-
-                above_player = []
-                below_player = []
-
-                levels = [[]]
-                potions = [[]]
-
-                crates = []
+            for wizard in wizards:
+                wizard.update()
+            
+            pygame.draw.rect(win, [75, 75, 75], player.inventory_box, 4)
+            pygame.draw.line(win, [75, 75, 75], [player.inventory_box.x + (1*player.inventory_box.w/4), player.inventory_box.y], [player.inventory_box.x + (1*player.inventory_box.w/4), player.inventory_box.y + player.inventory_box.h - 4], 4)
+            pygame.draw.line(win, [75, 75, 75], [player.inventory_box.x + (2*player.inventory_box.w/4), player.inventory_box.y], [player.inventory_box.x + (2*player.inventory_box.w/4), player.inventory_box.y + player.inventory_box.h - 4], 4)
+            pygame.draw.line(win, [75, 75, 75], [player.inventory_box.x + (3*player.inventory_box.w/4), player.inventory_box.y], [player.inventory_box.x + (3*player.inventory_box.w/4), player.inventory_box.y + player.inventory_box.h - 4], 4)
+            
+            speed_potions_no = inv_font.render(str(player.inventory["speed_potions"]), False, [255, 255, 255], [0, 0, 0])
+            speed_potions_no.set_colorkey([0, 0, 0])
+            
+            air_potions_no = inv_font.render(str(player.inventory["air_potions"]), False, [255, 255, 255], [0, 0, 0])
+            air_potions_no.set_colorkey([0, 0, 0])
+            
+            health_potions_no = inv_font.render(str(player.inventory["health_potions"]), False, [255, 255, 255], [0, 0, 0])
+            health_potions_no.set_colorkey([0, 0, 0])
+            
+            if player.inventory["speed_potions"] > 0:
+                win.blit(potion_sprites[0], [player.inventory_box.x + 16, player.inventory_box.y + 12])
+                win.blit(speed_potions_no, [player.inventory_box.x + 48, player.inventory_box.y + 44])
                 
-                explosions.clear()
-
-                for count, level in enumerate(levels):
+            if player.inventory["air_potions"] > 0:
+                win.blit(potion_sprites[1], [player.inventory_box.x + 16 + player.inventory_box.w/4, player.inventory_box.y + 12])
+                win.blit(air_potions_no, [player.inventory_box.x + 48 + player.inventory_box.w/4, player.inventory_box.y + 44])
+                
+            if player.inventory["health_potions"] > 0:
+                win.blit(potion_sprites[2], [player.inventory_box.x + 16 + player.inventory_box.w/2, player.inventory_box.y + 12])
+                win.blit(health_potions_no, [player.inventory_box.x + 48 + player.inventory_box.w/2, player.inventory_box.y + 44])
+                
+            if player.has_artifact:
+                win.blit(key, [player.inventory_box.x + 1 + player.inventory_box.w - key.get_width(), player.inventory_box.y + 0.5])
+                
+            if pygame.key.get_pressed()[pygame.K_1]:
+                player.inv_no = 0
+            if pygame.key.get_pressed()[pygame.K_2]:
+                player.inv_no = 1
+            if pygame.key.get_pressed()[pygame.K_3]:
+                player.inv_no = 2
+            if pygame.key.get_pressed()[pygame.K_4]:
+                player.inv_no = 3
+                
+            if not e_pressed:
+                if pygame.key.get_pressed()[pygame.K_e]:
+                    if player.inv_no == 0:
+                        if player.inventory["speed_potions"] > 0:
+                            player.inventory["speed_potions"] -= 1
+                            player.speed_effect = 2.5
+                            player.speed_time = time.time()
+                            
+                    if player.inv_no == 1:
+                        if player.inventory["air_potions"] > 0:
+                            player.inventory["air_potions"] -= 1
+                            player.air += 33
+                            
+                    if player.inv_no == 2:
+                        if player.inventory["health_potions"] > 0:
+                            player.inventory["health_potions"] -= 1
+                            player.health += 33
+                            if player.health > 100:
+                                player.health = 100
+                    e_pressed = True
                     
-                    for i in range(6):
-                        
-                        levels[count].append([])
-                        potions[count].append([])
-                        
-                        for j in range(10):
-                            n = random.randint(0, 10)
-                            levels[count][i].append(n)
-                            if n < 4:
-                                potions[count][i].append(random.randint(1, 6))
-                                levels[count][i].append(1)
-                                crates.append([(j*crate.get_width(), i*crate.get_height()), pygame.Rect(j*crate.get_width() + 4 + (win.get_width() - 10*crate.get_width())/2, i*crate.get_height()  + 64 + (win.get_height() - 6*crate.get_height())/2, crate.get_width() - 8, crate.get_height() - 8)])
-                            else:
-                                levels[count][i].append(0)
-                                potions[count][i].append(0)
+            if not pygame.key.get_pressed()[pygame.K_e]:
+                e_pressed = False
+            
+            bullet_manager.update()
                 
-                artifact = None                
-                artifact_crate = random.randint(0, len(crates))
+            pygame.draw.rect(win, [125, 125, 125], pygame.Rect(player.inventory_box.x + (player.inv_no*player.inventory_box.w/4), player.inventory_box.y, player.inventory_box.h, player.inventory_box.h), 4)
+            
+            pygame.draw.rect(win, [75, 200, 75], pygame.Rect(324, 8, (player.health/100)*256, 28))
+            pygame.draw.rect(win, [25, 100, 25], pygame.Rect(324, 8, 256, 28), 4)
+            
+            pygame.draw.rect(win, [75, 75, 200], pygame.Rect(692, 8, (player.air/100)*256, 28))
+            pygame.draw.rect(win, [25, 25, 100], pygame.Rect(692, 8, 256, 28), 4)     
+        
+            win.blit(health_text, [324 + (256-health_text.get_width())/2, 8])
+            win.blit(air_text, [692 + (256-air_text.get_width())/2, 8])
+            
+            if player.rect.colliderect(win_rects[current_level]) and player.has_artifact:
+                player.alive = False
+                player.win = True
+                current_level += 1
+            
+            if not player.alive and screenshot is not None:
+                win.blit(screenshot, [0,0])
+                win.blit(dark_overlay_surf, [0,0])
+                pygame.draw.circle(win, [0, 0, 0], [win.get_width()/2, win.get_height()/2], radius)
+                radius += 15
                 
+                if player.win:
+                    win.blit(win_text, [(win.get_width() - win_text.get_width())/2, (win.get_height() - win_text.get_height())/2])
+                else:
+                    win.blit(death_text, [(win.get_width() - death_text.get_width())/2, (win.get_height() - death_text.get_height())/2])
+                
+                if radius > 1000:
+                    
+                    radius = 0
+                    
+                    screenshot = None
+                    
+                    player = Player()
+
+                    above_player = []
+                    below_player = []
+
+                    levels = [[]]
+                    potions = [[]]
+
+                    crates = []
+                    
+                    explosions.clear()
+
+                    for count, level in enumerate(levels):
+                        
+                        for i in range(6):
+                            
+                            levels[count].append([])
+                            potions[count].append([])
+                            
+                            for j in range(10):
+                                n = random.randint(0, 10)
+                                levels[count][i].append(n)
+                                if n < 4:
+                                    potions[count][i].append(random.randint(1, 6))
+                                    levels[count][i].append(1)
+                                    crates.append([(j*crate.get_width(), i*crate.get_height()), pygame.Rect(j*crate.get_width() + 4 + (win.get_width() - 10*crate.get_width())/2, i*crate.get_height()  + 64 + (win.get_height() - 6*crate.get_height())/2, crate.get_width() - 8, crate.get_height() - 8)])
+                                else:
+                                    levels[count][i].append(0)
+                                    potions[count][i].append(0)
+                    
+                    artifact = None                
+                    artifact_crate = random.randint(0, len(crates))
+        
+        elif screen_state == 0:
+            for count, button in enumerate(title_screen_buttons):
+                button.update()
+                win.blit(title_screen_text[count][0], [title_screen_text[count][1][0], title_screen_text[count][1][1] + button.current*4])
                 
         pygame.display.update()
         await asyncio.sleep(0)
