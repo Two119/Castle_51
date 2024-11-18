@@ -70,6 +70,7 @@ async def main():
             self.rect = pygame.Rect(self.pos[0]+16, self.pos[1], 112, 128)
             self.wide_rect = pygame.Rect(self.pos[0] - 8, self.pos[1] - 8, 128, 128)
             self.alive = True
+            self.has_artifact = False
             self.dir = 0
             self.speed = 5
             self.air = 100
@@ -385,7 +386,7 @@ async def main():
             self.pos[0] += self.vel[0]
             self.pos[1] += self.vel[1]
             
-            if time.time() - self.bullet_delay >= self.bullet_repeat_time:
+            if time.time() - self.bullet_delay >= self.bullet_repeat_time and player.crate is None:
                 self.bullet_delay = time.time()     
                 bullet_manager.add_bullet((pygame.Rect(self.b_pos[0], self.b_pos[1], 16, 12), angle_between((self.staff_pos, player.pos))))
             
@@ -401,6 +402,8 @@ async def main():
         def add_bullet(self, bullet):
             self.bullets.append(bullet)
         def update(self):
+            global artifact
+            global artifact_crate
             for bullet in self.bullets:
                 if bullet[0].x < 0-self.bullet_sprite.get_width() or bullet[0].x > win.get_width() or bullet[0].y < 0-self.bullet_sprite.get_height() or bullet[0].y > win.get_height():
                     self.bullets.remove(bullet)
@@ -420,6 +423,13 @@ async def main():
                             else:
                                 if c < player.crate:
                                     player.crate -= 1
+                        if artifact is None:        
+                            if c < artifact_crate:
+                                artifact_crate -= 1
+                                
+                            if c == artifact_crate:
+                                artifact = pygame.Rect(rect.x + key.get_width()/4, rect.y + key.get_height()/4, key.get_width(), key.get_height())
+                        
                         crates.pop(c)
                         explosions.append([(rect.x + crate.get_width()/2, rect.y + crate.get_height()/2), 0, time.time()])
                         break
@@ -475,6 +485,16 @@ async def main():
                     potions[count][i].append(0)
                     
     current_level = 0
+    
+    global artifact_crate
+    artifact_crate = random.randint(0, len(crates))
+    
+    key = scale_image(pygame.image.load("assets/sprites/key.png").convert())
+    key.set_colorkey((255, 255, 255))
+    
+    global artifact
+    artifact = None
+                        
     global ctrl_pressed
     ctrl_pressed = False
 
@@ -498,6 +518,9 @@ async def main():
     
     death_text = big_font.render("YOU DIED!", False, [255, 255, 255], [0, 0, 0])
     death_text.set_colorkey([0, 0, 0])
+    
+    win_text = big_font.render("YOU WIN!", False, [255, 255, 255], [0, 0, 0])
+    win_text.set_colorkey([0, 0, 0])
     
     e_pressed = False
     screenshot = None
@@ -590,6 +613,23 @@ async def main():
             else:
                 below_player.append(count)
         
+        for explosion in explosions:
+            win.blit(crate_explosion.get((explosion[1], 0)), (explosion[0][0] - crate_explosion.size[1]/2, explosion[0][1] - crate_explosion.size[0]/2)) 
+            if time.time() - explosion[2] >= 0.05:
+                explosion[2] = time.time()
+                explosion[1] += 1
+                if explosion[1] > 5:
+                    explosion[1] = 5 
+                    
+        if artifact == None:
+            if player.crate == artifact_crate:
+                player.has_artifact = True
+        else:
+            if not player.has_artifact:
+                win.blit(key, (artifact.x, artifact.y))
+                if player.rect.colliderect(artifact):
+                    player.has_artifact = True
+        
         for x in below_player:
             win.blit(crate, [crates[x][0][0] + (win.get_width() - 10*crate.get_width())/2, crates[x][0][1] + 60 + (win.get_height() - len(levels[current_level])*crate.get_height())/2])
             
@@ -604,14 +644,6 @@ async def main():
             
         for wizard in wizards:
             wizard.update()
-            
-        for explosion in explosions:
-            win.blit(crate_explosion.get((explosion[1], 0)), (explosion[0][0] - crate_explosion.size[1]/2, explosion[0][1] - crate_explosion.size[0]/2)) 
-            if time.time() - explosion[2] >= 0.05:
-                explosion[2] = time.time()
-                explosion[1] += 1
-                if explosion[1] > 5:
-                    explosion[1] = 5 
         
         pygame.draw.rect(win, [75, 75, 75], player.inventory_box, 4)
         pygame.draw.line(win, [75, 75, 75], [player.inventory_box.x + (1*player.inventory_box.w/4), player.inventory_box.y], [player.inventory_box.x + (1*player.inventory_box.w/4), player.inventory_box.y + player.inventory_box.h - 4], 4)
@@ -638,6 +670,9 @@ async def main():
         if player.inventory["health_potions"] > 0:
             win.blit(potion_sprites[2], [player.inventory_box.x + 16 + player.inventory_box.w/2, player.inventory_box.y + 12])
             win.blit(health_potions_no, [player.inventory_box.x + 48 + player.inventory_box.w/2, player.inventory_box.y + 44])
+            
+        if player.has_artifact:
+            win.blit(key, [player.inventory_box.x + 1 + player.inventory_box.w - key.get_width(), player.inventory_box.y + 0.5])
             
         if pygame.key.get_pressed()[pygame.K_1]:
             player.inv_no = 0
@@ -727,6 +762,10 @@ async def main():
                             else:
                                 levels[count][i].append(0)
                                 potions[count][i].append(0)
+                
+                artifact = None                
+                artifact_crate = random.randint(0, len(crates))
+                
                 
         pygame.display.update()
         await asyncio.sleep(0)
