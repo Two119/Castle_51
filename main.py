@@ -294,8 +294,8 @@ async def main():
                     potions[current_level][current_crate_coord[1]][current_crate_coord[0]] = 0
                     #print(potion_type)
         
-            self.pos[0] += self.vel[0]
-            self.pos[1] += self.vel[1]
+            self.pos[0] += self.vel[0] * (60/current_fps)
+            self.pos[1] += self.vel[1] * (60/current_fps)
     
     staff = scale_image(pygame.image.load("assets/sprites/Wizard/staff.png").convert())
     staff.set_colorkey((255, 255, 255))
@@ -459,8 +459,9 @@ async def main():
             win.blit(img, self.pos)
             win.blit(staff_img, self.staff_pos)
             
-            self.pos[0] += self.vel[0]
-            self.pos[1] += self.vel[1]
+            global current_fps
+            self.pos[0] += self.vel[0]*(60/current_fps)
+            self.pos[1] += self.vel[1]*(60/current_fps)
             
             if time.time() - self.bullet_delay >= self.bullet_repeat_time and player.crate is None:
                 self.bullet_delay = time.time()     
@@ -512,8 +513,9 @@ async def main():
                     c += 1
                 win.blit(pygame.transform.rotate(self.bullet_sprite, 360 - bullet[1]), (bullet[0].x, bullet[0].y))    
                 
-                bullet[0].x += self.bullet_speed * math.cos(math.radians(bullet[1]))
-                bullet[0].y += self.bullet_speed * math.sin(math.radians(bullet[1]))
+                global current_fps
+                bullet[0].x += self.bullet_speed * math.cos(math.radians(bullet[1])) * (60/current_fps)
+                bullet[0].y += self.bullet_speed * math.sin(math.radians(bullet[1])) * (60/current_fps)
     
     bullet_manager = BulletManager()
     
@@ -606,6 +608,9 @@ async def main():
     dark_overlay_surf.set_alpha(75)
     radius = 0
     
+    global current_fps
+    current_fps = 60
+    
     while True:
 
         if not player.alive:
@@ -616,6 +621,8 @@ async def main():
         win.blit(bg, [0, 0])
         
         clock.tick(60)
+        
+        current_fps = clock.get_fps()
         
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -803,12 +810,14 @@ async def main():
                 player.win = True
                 player.has_artifact = False
                 current_level += 1
+                if current_level > len(levels) - 1:
+                    current_level -= 1
             
             if not player.alive and screenshot is not None:
                 win.blit(screenshot, [0,0])
                 win.blit(dark_overlay_surf, [0,0])
                 pygame.draw.circle(win, [0, 0, 0], [win.get_width()/2, win.get_height()/2], radius)
-                radius += 15
+                radius += 15 * (60/current_fps)
                 
                 if player.win:
                     win.blit(win_text, [(win.get_width() - win_text.get_width())/2, (win.get_height() - win_text.get_height())/2])
@@ -828,6 +837,8 @@ async def main():
                     player = Player()
     
                     wizards = [[Wizard(14*64, 8*64)], [Wizard(15*64, 7*64), Wizard(15*64, 11*64)]]
+                    
+                    bullet_manager.bullets.clear()
 
                     above_player = []
                     below_player = []
