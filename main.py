@@ -363,20 +363,32 @@ async def main():
                 self.frame[1] = 1
                 
             else:
-                self.vel[1] = 0"""
-            self.adjusted = False
-            
+                self.vel[1] = 0"""         
             if not self.wide_rect.colliderect(player.wide_rect):
-                self.angle = angle_between((self.pos, player.pos)) 
-                
-                if not self.adjusted:
-                    for wizard in wizards[current_level]:
-                        if wizard != self:
-                            if self.rect.colliderect(wizard.rect):
-                                adjust_angles_to_avoid_collision(self, wizard)
-                                wizard.adjusted = True
-                                
+                self.angle = angle_between((self.pos, player.pos))               
                 self.vel = [self.speed*math.cos(math.radians(self.angle)), self.speed*math.sin(math.radians(self.angle))]
+                
+                for wizard in wizards[current_level]:
+                    if wizard != self:
+                        if self.rect.colliderect(wizard.rect):
+                            if self.vel[0] > 0:
+                                if wizard.rect.x > self.rect.x:
+                                    self.vel[0] = 0
+                                    
+                            if self.vel[0] < 0:
+                                if wizard.rect.x < self.rect.x:
+                                    self.vel[0] = 0   
+                                    
+                            if self.vel[1] > 0:
+                                if wizard.rect.y > self.rect.y:
+                                    self.vel[1] = 0
+                                    
+                            if self.vel[1] < 0:
+                                if wizard.rect.y < self.rect.y:
+                                    self.vel[1] = 0   
+                                
+                            break
+                        
                 self.frame[1] = 1
                 
             else:
@@ -520,7 +532,7 @@ async def main():
 
         
     global level_adjustments
-    level_adjustments = [[3*crate.get_width(), 5*crate.get_height() - 44], [3*crate.get_width(), 5*crate.get_height() - 44]]
+    level_adjustments = [[3*crate.get_width(), 5*crate.get_height() - 64], [3*crate.get_width(), 5*crate.get_height() - 64]]
     
     player = Player()
     
