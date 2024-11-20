@@ -789,14 +789,14 @@ async def main():
                 
             pygame.draw.rect(win, [125, 125, 125], pygame.Rect(player.inventory_box.x + (player.inv_no*player.inventory_box.w/4), player.inventory_box.y, player.inventory_box.h, player.inventory_box.h), 4)
             
-            pygame.draw.rect(win, [75, 200, 75], pygame.Rect(324, 8, (player.health/100)*256, 28))
-            pygame.draw.rect(win, [25, 100, 25], pygame.Rect(324, 8, 256, 28), 4)
+            pygame.draw.rect(win, [75, 200, 75], pygame.Rect(692, 8, (player.health/100)*256, 28))
+            pygame.draw.rect(win, [25, 100, 25], pygame.Rect(692, 8, 256, 28), 4)
             
-            pygame.draw.rect(win, [75, 75, 200], pygame.Rect(692, 8, (player.air/100)*256, 28))
-            pygame.draw.rect(win, [25, 25, 100], pygame.Rect(692, 8, 256, 28), 4)     
+            pygame.draw.rect(win, [75, 75, 200], pygame.Rect(964, 8, (player.air/100)*256, 28))
+            pygame.draw.rect(win, [25, 25, 100], pygame.Rect(964, 8, 256, 28), 4)     
         
-            win.blit(health_text, [324 + (256-health_text.get_width())/2, 8])
-            win.blit(air_text, [692 + (256-air_text.get_width())/2, 8])
+            win.blit(health_text, [692 + (256-health_text.get_width())/2, 8])
+            win.blit(air_text, [964 + (256-air_text.get_width())/2, 8])
             
             if player.rect.colliderect(win_rects[current_level]) and player.has_artifact:
                 player.alive = False
