@@ -105,7 +105,7 @@ class Notification:
     def update(self):
         self.pos[1]-=(self.speed)
         self.rect = pygame.Rect(self.pos[0], self.pos[1], self.surf.get_width(), self.surf.get_height())
-        self.alpha -= (self.speed*1.5)
+        self.alpha -= (self.speed*1.5) * (60/current_fps)
         if self.alpha <= 0:
             self.alpha = 0
         self.surf.set_alpha(int(self.alpha))
