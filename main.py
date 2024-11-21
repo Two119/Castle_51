@@ -110,6 +110,23 @@ class Notification:
             self.alpha = 0
         self.surf.set_alpha(int(self.alpha))
         win.blit(self.surf, self.pos)
+        
+def isequal(color1:pygame.Color, color2:tuple) -> bool:
+        if color1.r == color2[0] and color1.g == color2[1] and color1.b == color2[2]:
+            return True
+        else:
+            return False
+        
+def dye(img:pygame.Surface, color:tuple, colorkey:tuple, alpha:int=128):
+    surf = img.copy()
+    rect_surf = pygame.Surface([1, 1])
+    rect_surf.fill(color)
+    rect_surf.set_alpha(alpha)
+    for j in range(surf.get_height()):
+        for i in range(surf.get_width()):
+            if not isequal(surf.get_at([i, j]), colorkey):
+                surf.blit(rect_surf, [i, j])
+    return surf
 
 global screen_state
 screen_state = 0
@@ -156,7 +173,9 @@ async def main():
             self.inventory_box = pygame.Rect((win.get_width() - 64*4)/2, win.get_height() - 88, 64*4, 64)
             self.speed_effect = 0
             self.speed_time = time.time()
-        
+            self.damange_jitter_timer = time.time() - 3
+            self.damange_jitter_duration = 1
+
         def update_animation(self):
             if time.time() - self.anim_time >= 0.1:
                 self.frame[0] += 1
@@ -288,7 +307,11 @@ async def main():
                     self.air += 0.25
                 
                 try:
-                    win.blit(pygame.transform.flip(knight_animations[self.frame[1]].get([self.frame[0], 0]), self.dir, False), self.pos)
+                    if (time.time() - self.damange_jitter_timer) < self.damange_jitter_duration:
+                        win.blit(pygame.transform.flip(dyed_knight_animations[self.frame[1]][self.frame[0]], self.dir, False), [self.pos[0] + random.randint(1, 12), self.pos[1] + random.randint(1, 12)])
+                    else:
+                        win.blit(pygame.transform.flip(knight_animations[self.frame[1]].get([self.frame[0], 0]), self.dir, False), self.pos)
+                        
                     self.mask = pygame.mask.from_surface(pygame.transform.flip(knight_animations[self.frame[1]].get([self.frame[0], 0]), self.dir, False))
                 except:    
                     self.frame[0] = 0
@@ -501,9 +524,11 @@ async def main():
                 if bullet[0].x < 0-self.bullet_sprite.get_width() or bullet[0].x > win.get_width() or bullet[0].y < 0-self.bullet_sprite.get_height() or bullet[0].y > win.get_height():
                     self.bullets.remove(bullet)
                     continue
+                
                 if self.bullet_mask.overlap(player.mask, (player.pos[0]-bullet[0].x, player.pos[1]-bullet[0].y)) and player.crate == None:
                     self.bullets.remove(bullet)
                     player.health -= 25
+                    player.damange_jitter_timer = time.time()
                     continue
                 
                 c = 0  
@@ -544,6 +569,7 @@ async def main():
     explosions = []
 
     knight_animations = [SpriteSheet(scale_image(pygame.image.load("assets/sprites/Knight/Idle/Idle-Sheet.png").convert()), [4, 1], [255, 255, 255]), SpriteSheet(scale_image(pygame.image.load("assets/sprites/Knight/Run/Run-Sheet.png").convert()), [6, 1], [255, 255, 255]), SpriteSheet(scale_image(pygame.image.load("assets/sprites/Knight/Death/Death-Sheet.png").convert()), [6, 1], [255, 255, 255])]
+    dyed_knight_animations = [[dye(img, [255, 0, 0], [255, 255, 255], 72) for img in spritesheet.sheet[0]] for spritesheet in knight_animations]
     wizard_animations = [SpriteSheet(scale_image(pygame.image.load("assets/sprites/Wizard/Idle/Idle-Sheet.png").convert()), [4, 1], [255, 255, 255]), SpriteSheet(scale_image(pygame.image.load("assets/sprites/Wizard/Run/Run-Sheet.png").convert()), [6, 1], [255, 255, 255]), SpriteSheet(scale_image(pygame.image.load("assets/sprites/Wizard/Death/Death-Sheet.png").convert()), [6, 1], [255, 255, 255])]
 
     #animation_index = {"idle":0, "run":1, "death":2}
