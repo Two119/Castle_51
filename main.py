@@ -94,6 +94,22 @@ class Button:
             self.current = 1
         win.blit(self.textures[self.current], self.pos)
         self.rect = self.textures[self.current].get_rect(topleft=self.pos)
+        
+class Notification:
+    def __init__(self, surf: pygame.Surface):
+        self.surf = surf
+        self.alpha = 255
+        self.pos = [(win.get_width()-self.surf.get_width())/2, (win.get_height()-self.surf.get_height())/2]
+        self.speed = 1
+        self.rect = pygame.Rect(self.pos[0], self.pos[1], self.surf.get_width(), self.surf.get_height())
+    def update(self):
+        self.pos[1]-=(self.speed)
+        self.rect = pygame.Rect(self.pos[0], self.pos[1], self.surf.get_width(), self.surf.get_height())
+        self.alpha -= (self.speed*1.5)
+        if self.alpha <= 0:
+            self.alpha = 0
+        self.surf.set_alpha(int(self.alpha))
+        win.blit(self.surf, self.pos)
 
 global screen_state
 screen_state = 0
@@ -531,7 +547,8 @@ async def main():
     wizard_animations = [SpriteSheet(scale_image(pygame.image.load("assets/sprites/Wizard/Idle/Idle-Sheet.png").convert()), [4, 1], [255, 255, 255]), SpriteSheet(scale_image(pygame.image.load("assets/sprites/Wizard/Run/Run-Sheet.png").convert()), [6, 1], [255, 255, 255]), SpriteSheet(scale_image(pygame.image.load("assets/sprites/Wizard/Death/Death-Sheet.png").convert()), [6, 1], [255, 255, 255])]
 
     #animation_index = {"idle":0, "run":1, "death":2}
-
+    global notifications
+    notifications = []
         
     global level_adjustments
     level_adjustments = [[3*crate.get_width(), 5*crate.get_height() - 64], [3*crate.get_width(), 5*crate.get_height() - 64]]
@@ -592,6 +609,12 @@ async def main():
     
     air_text = ui_font.render("AIR", False, [255, 255, 255], [0, 0, 0])
     air_text.set_colorkey([0, 0, 0])
+    
+    suffocation_warning = ui_font.render("YOU ARE SUFFOCATING!", False, [255, 255, 255], [0, 0, 0])
+    suffocation_warning.set_colorkey([0, 0, 0])
+    
+    key_notification = ui_font.render("FOUND KEY!", False, [255, 255, 255], [0, 0, 0])
+    key_notification.set_colorkey([0, 0, 0])
     
     death_text = big_font.render("YOU DIED!", False, [255, 255, 255], [0, 0, 0])
     death_text.set_colorkey([0, 0, 0])
@@ -708,11 +731,14 @@ async def main():
                         
             if artifact == None:
                 if player.crate == artifact_crate:
+                    if not player.has_artifact:
+                        notifications.append(Notification(key_notification))
                     player.has_artifact = True
             else:
                 if not player.has_artifact:
                     win.blit(key, (artifact.x, artifact.y))
                     if player.rect.colliderect(artifact):
+                        notifications.append(Notification(key_notification))
                         player.has_artifact = True
             
             for x in below_player:
@@ -729,7 +755,28 @@ async def main():
                 
             for wizard in wizards[current_level]:
                 wizard.update()
-            
+                
+            air_notification = False
+            for notification in notifications:
+                
+                for notification2 in notifications:
+                    if notification2 != notification:
+                        if notification2.rect.colliderect(notification.rect):
+                            if notification.pos[1] > notification2.pos[1]:
+                                notification.pos[1] += 32
+                            else:
+                                notification2.pos[1] += 32  
+                        
+                notification.update()
+                if notification.surf == suffocation_warning:
+                    air_notification = True
+                if notification.alpha < 5:
+                    notifications.remove(notification)
+                    
+            if player.air < 30 and not air_notification and player.crate != None:
+                notifications.append(Notification(suffocation_warning))    
+                
+                
             pygame.draw.rect(win, [75, 75, 75], player.inventory_box, 4)
             pygame.draw.line(win, [75, 75, 75], [player.inventory_box.x + (1*player.inventory_box.w/4), player.inventory_box.y], [player.inventory_box.x + (1*player.inventory_box.w/4), player.inventory_box.y + player.inventory_box.h - 4], 4)
             pygame.draw.line(win, [75, 75, 75], [player.inventory_box.x + (2*player.inventory_box.w/4), player.inventory_box.y], [player.inventory_box.x + (2*player.inventory_box.w/4), player.inventory_box.y + player.inventory_box.h - 4], 4)
@@ -833,6 +880,8 @@ async def main():
                     crates = []
                     
                     explosions.clear()
+
+                    notifications.clear()
 
                     player = Player()
     
