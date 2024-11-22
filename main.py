@@ -190,9 +190,9 @@ async def main():
         
         def update(self):
             global ctrl_pressed
-            self.rect = pygame.Rect(self.pos[0]+36, self.pos[1] + 12, 60, 116)
+            self.rect = pygame.Rect(self.pos[0]+32, self.pos[1] + 12, 64, 116)
             self.wide_rect = pygame.Rect(self.pos[0], self.pos[1] - 8, 128, 144)
-            pygame.draw.rect(win, [255, 0, 0], self.rect)
+            #pygame.draw.rect(win, [255, 0, 0], self.rect)
             #pygame.draw.rect(win, [255, 0, 0], self.wide_rect)
             if self.crate == None:
                 if pygame.key.get_pressed()[pygame.K_RIGHT]:
@@ -721,7 +721,7 @@ async def main():
             for crate_, rect in crates:
                 count += 1
                 #pygame.draw.rect(win, [255, 0, 0], rect)
-                if rect.colliderect(player.wide_rect):
+                if rect.colliderect(player.rect):
                     if rect.y < player.rect.y:
                         below_player.append(count)
                     else:
@@ -732,30 +732,32 @@ async def main():
                         if count in above_player:
                             above_player.remove(count)
                     
-                    if crate_mask.overlap(player.mask, [player.pos[0] - rect.x, player.pos[1] - rect.y]):
-                        if (pygame.key.get_pressed()[pygame.K_LCTRL] or pygame.key.get_pressed()[pygame.K_RCTRL]) and not ctrl_pressed:
-                            ctrl_pressed = True
-                            if player.crate == None:
-                                player.crate = count
-                                
-                                if (rect.y - player.rect.y) < 64 and (rect.y - player.rect.y) > 0:
-                                    player.pos[1] = rect.y - 64
-                        
-                        if (rect.y - player.rect.y) < 64 and (rect.y - player.rect.y) > 0:
-                            if player.vel[1] > 0:
-                                player.vel[1] = 0
-                            if (rect.y - player.rect.y) < 48 and (rect.y - player.rect.y) > 0:
-                                if player.vel[0] != 0:
-                                    if player.pos[0] - rect.x > 0:
-                                        if player.vel[0] < 0:
-                                            player.vel[0] = 0
-                                    if player.pos[0] - rect.x < 0:
-                                        if player.vel[0] > 0:
-                                            player.vel[0] = 0
-                                
-                        if (player.rect.y - rect.y) < 28 and (player.rect.y - rect.y) > 0:
-                            if player.vel[1] < 0:
-                                player.vel[1] = 0
+          
+                    if (pygame.key.get_pressed()[pygame.K_LCTRL] or pygame.key.get_pressed()[pygame.K_RCTRL]) and not ctrl_pressed:
+                        ctrl_pressed = True
+                        if player.crate == None:
+                            player.crate = count
+                            
+                            if (rect.y - player.rect.y) < 64 and (rect.y - player.rect.y) > 0:
+                                player.pos[1] = rect.y - 64
+                    
+                    if (rect.y - player.rect.y) < 64 and (rect.y - player.rect.y) > 0:
+                        if player.vel[1] > 0:
+                            player.vel[1] = 0
+                        if (rect.y - player.rect.y) < 48 and (rect.y - player.rect.y) > 0:
+                            if player.vel[0] != 0:
+                                if player.pos[0] - rect.x > 0:
+                                    if player.vel[0] < 0:
+                                        player.vel[0] = 0
+                                        player.pos[0] += 4
+                                if player.pos[0] - rect.x < 0:
+                                    if player.vel[0] > 0:
+                                        player.vel[0] = 0
+                                        player.pos[0] -= 4
+                            
+                    if (player.rect.y - rect.y) < 28 and (player.rect.y - rect.y) > 0:
+                        if player.vel[1] < 0:
+                            player.vel[1] = 0
                     
                 else:
                     below_player.append(count)
