@@ -331,6 +331,10 @@ async def main():
                     else:
                         self.inventory["health_potions"] += 1
                     potions[current_level][current_crate_coord[1]][current_crate_coord[0]] = 0
+                    
+                if potions[current_level][current_crate_coord[1]][current_crate_coord[0]] == 7 and not self.has_artifact:
+                    self.has_artifact = True
+                    notifications.append(Notification(key_notification))
                     #print(potion_type)
         
             self.pos[0] += self.vel[0] * (60/current_fps)
@@ -507,6 +511,168 @@ async def main():
                 bullet_manager.add_bullet((pygame.Rect(self.b_pos[0], self.b_pos[1], 16, 12), angle_between((self.staff_pos, player.pos))))
             
             self.update_animation()
+            
+    class Skeleton:
+        def __init__(self, x, y):
+            self.pos = [x, y]
+            self.frame = [0, 0]
+            self.rect = pygame.Rect(self.pos[0]+16, self.pos[1], 112, 128)
+            self.wide_rect = pygame.Rect(self.pos[0] - 8, self.pos[1] - 8, 128, 128)
+            self.dir = 0
+            self.speed = 5
+            self.anim_time = time.time()
+            self.vel = [0, 0]
+            self.mask = pygame.mask.from_surface(pygame.transform.flip(skele_animations[self.frame[1]].get([self.frame[0], 0]), self.dir, False))
+            self.speed_effect = 0
+            self.blit_surf = pygame.Surface((32*4, 36*4))
+            self.angle = 0
+            self.staff_pos = [0,0]
+            self.bullet_delay = time.time()
+            self.bullet_repeat_time = 0.8
+            self.b_pos = [0, 0]
+            self.adjusted = False
+            
+        def update_animation(self):
+            if time.time() - self.anim_time >= 0.1:
+                self.frame[0] += 1
+                
+                try:
+                    skele_animations[self.frame[1]].get([self.frame[0], 0])
+                    
+                except:
+                    self.frame[0] = 0
+                
+                self.anim_time = time.time()
+        
+        def update(self):
+
+            """if self.vel[0] == 0 and self.vel[1] == 0:
+                self.frame[1] = 0
+            else:
+                self.frame[1] = 1
+            
+            if pygame.key.get_pressed()[pygame.K_RIGHT]:
+                self.dir = 0
+                self.vel[0] = (self.speed + self.speed_effect)*1
+                self.frame[1] = 1
+                
+            elif pygame.key.get_pressed()[pygame.K_LEFT]:
+                self.dir = 1
+                self.vel[0] = (self.speed + self.speed_effect)*-1
+                self.frame[1] = 1
+                
+            else:
+                self.vel[0] = 0
+                if self.vel[1] == 0:
+                    self.frame[1] = 0
+                    
+            if pygame.key.get_pressed()[pygame.K_UP]:
+                self.vel[1] = (self.speed + self.speed_effect)*-1
+                self.frame[1] = 1
+                
+            elif pygame.key.get_pressed()[pygame.K_DOWN]:
+                self.vel[1] =(self.speed + self.speed_effect)*1
+                self.frame[1] = 1
+                
+            else:
+                self.vel[1] = 0"""         
+            if not self.wide_rect.colliderect(player.wide_rect):
+                self.angle = angle_between((self.pos, player.pos))               
+                
+                for wizard in wizards[current_level]:
+                    if wizard != self:
+                        if self.rect.colliderect(wizard.rect):
+                            if self.vel[0] > 0:
+                                if wizard.rect.x > self.rect.x:
+                                    self.vel[0] = 0
+                                    
+                            if self.vel[0] < 0:
+                                if wizard.rect.x < self.rect.x:
+                                    self.vel[0] = 0   
+                                    
+                            if self.vel[1] > 0:
+                                if wizard.rect.y > self.rect.y:
+                                    self.vel[1] = 0
+                                    
+                            if self.vel[1] < 0:
+                                if wizard.rect.y < self.rect.y:
+                                    self.vel[1] = 0   
+                                
+                            break
+                        
+            else:
+                self.vel = [0,0]
+                self.frame[1] = 0
+                self.angle = angle_between((self.pos, player.pos))
+            try:
+                skele_animations[self.frame[1]].get([self.frame[0], 0])
+                
+            except:
+                self.frame[0] = 0
+                
+            self.rect = pygame.Rect(self.pos[0], self.pos[1], skele_animations[self.frame[1]].get([self.frame[0], 0]).get_width(), skele_animations[self.frame[1]].get([self.frame[0], 0]).get_height())
+            self.wide_rect = pygame.Rect(self.pos[0] - 32, self.pos[1] - 32, skele_animations[self.frame[1]].get([self.frame[0], 0]).get_width() + 64, skele_animations[self.frame[1]].get([self.frame[0], 0]).get_height() + 64)
+            
+            img = pygame.transform.flip(skele_animations[self.frame[1]].get([self.frame[0], 0]), self.dir, False)
+            self.mask = pygame.mask.from_surface(img)
+            
+            staff_img = pygame.transform.rotate(staff, 290-self.angle)
+            staff_mask = pygame.mask.from_surface(staff_img)
+            self.staff_pos = (self.pos[0] + (img.get_width() - staff_img.get_width())/2, self.pos[1]  + (img.get_height() - staff_img.get_height())/2)
+            #staff_pos
+            
+            for j in range(0, staff_img.get_height(), 4):
+                for i in range(0, staff_img.get_width(), 4):
+                    if staff_img.get_at((i, j)).r == 240:
+                        self.b_pos = [self.staff_pos[0] + i, self.staff_pos[1] + j]
+            
+            for crate_, rect in crates:
+                if self.wide_rect.colliderect(rect):
+                    if (rect.y - self.pos[1]) < 172 and (rect.y - self.pos[1]) > 48:
+                        overlap_img = self.mask.overlap_mask(crate_mask, (rect.x - self.pos[0], rect.y - self.pos[1])).to_surface(unsetcolor=(0, 0, 0, 0), setcolor = (255,255,255))
+                        img.blit(overlap_img, (-4, 0))
+                        img.blit(overlap_img, (0, -4))
+                        img.blit(overlap_img, (0, 0))
+
+                        overlap_img2 = staff_mask.overlap_mask(crate_mask, (rect.x - self.staff_pos[0], rect.y - self.staff_pos[1])).to_surface(unsetcolor=(0, 0, 0, 0), setcolor = (255,255,255))
+                        staff_img.blit(overlap_img2, (0, 0))
+                        
+                if crate_mask.overlap(self.mask, (self.pos[0] - rect.x, self.pos[1] - rect.y)):
+                    if (rect.y - self.rect.y) < 96 and (rect.y - self.rect.y) > 0:
+                            if self.vel[1] > 0:
+                                self.vel[1] = 0
+                            if (rect.y - self.rect.y) < 72 and (rect.y - self.rect.y) > 0:
+                                if self.vel[0] != 0:
+                                    if self.pos[0] - rect.x > 0:
+                                        if self.vel[0] < 0:
+                                            self.vel[0] = 0
+                                    if self.pos[0] - rect.x < 0:
+                                        if self.vel[0] > 0:
+                                            self.vel[0] = 0
+                                
+                    if (self.rect.y - rect.y) < 16 and (self.rect.y - rect.y) > 0:
+                        if self.vel[1] < 0:
+                            self.vel[1] = 0
+                        
+            if self.rect.colliderect(player.wide_rect):
+                    if (player.pos[1] - self.pos[1]) < 172 and (player.pos[1] - self.pos[1]) > 16:
+                        overlap_img = self.mask.overlap_mask(player.mask, (player.pos[0] - self.pos[0], player.pos[1] - self.pos[1])).to_surface(unsetcolor=(0, 0, 0, 0), setcolor = (255,255,255))
+                        img.blit(overlap_img, (0, 0))
+                                  
+            swap_color(img, [255, 255, 255], [0, 0, 0])
+            swap_color(staff_img, [255, 255, 255], [0, 0, 0])
+            
+            img.set_colorkey([0, 0, 0])
+            staff_img.set_colorkey([0, 0, 0])
+
+            win.blit(img, self.pos)
+            win.blit(staff_img, self.staff_pos)
+            
+            if time.time() - self.bullet_delay >= self.bullet_repeat_time and player.crate is None:
+                self.bullet_delay = time.time()     
+                bullet_manager.add_bullet((pygame.Rect(self.b_pos[0], self.b_pos[1], 16, 12), angle_between((self.staff_pos, player.pos))))
+            
+            self.update_animation()
     
     class BulletManager:
         def __init__(self):
@@ -541,12 +707,12 @@ async def main():
                             else:
                                 if c < player.crate:
                                     player.crate -= 1
-                        if artifact is None:        
-                            if c < artifact_crate:
-                                artifact_crate -= 1
-                                
-                            if c == artifact_crate:
-                                artifact = pygame.Rect(rect.x + key.get_width()/4, rect.y + key.get_height()/4, key.get_width(), key.get_height())
+                        if artifact is None:     
+                            current_crate_coord = [int((crates[c][1].x + level_adjustments[current_level][0])/ crate.get_width()), int((crates[c][1].y + level_adjustments[current_level][1])/ crate.get_height())]
+                            
+                            if player.alive and not player.has_artifact:
+                                if potions[current_level][current_crate_coord[1]][current_crate_coord[0]] == 7:
+                                    artifact = pygame.Rect(rect.x + key.get_width()/4, rect.y + key.get_height()/4, key.get_width(), key.get_height())
                         
                         crates.pop(c)
                         explosions.append([(rect.x + crate.get_width()/2, rect.y + crate.get_height()/2), 0, time.time()])
@@ -571,28 +737,33 @@ async def main():
     knight_animations = [SpriteSheet(scale_image(pygame.image.load("assets/sprites/Knight/Idle/Idle-Sheet.png").convert()), [4, 1], [255, 255, 255]), SpriteSheet(scale_image(pygame.image.load("assets/sprites/Knight/Run/Run-Sheet.png").convert()), [6, 1], [255, 255, 255]), SpriteSheet(scale_image(pygame.image.load("assets/sprites/Knight/Death/Death-Sheet.png").convert()), [6, 1], [255, 255, 255])]
     dyed_knight_animations = [[dye(img, [255, 0, 0], [255, 255, 255], 72) for img in spritesheet.sheet[0]] for spritesheet in knight_animations]
     wizard_animations = [SpriteSheet(scale_image(pygame.image.load("assets/sprites/Wizard/Idle/Idle-Sheet.png").convert()), [4, 1], [255, 255, 255]), SpriteSheet(scale_image(pygame.image.load("assets/sprites/Wizard/Run/Run-Sheet.png").convert()), [6, 1], [255, 255, 255]), SpriteSheet(scale_image(pygame.image.load("assets/sprites/Wizard/Death/Death-Sheet.png").convert()), [6, 1], [255, 255, 255])]
+    skele_animations = [SpriteSheet(scale_image(pygame.image.load("assets/sprites/Skeleton/Idle/Idle-Sheet.png").convert()), [4, 1], [255, 255, 255]), SpriteSheet(scale_image(pygame.image.load("assets/sprites/Skeleton/Run/Run-Sheet.png").convert()), [6, 1], [255, 255, 255]), SpriteSheet(scale_image(pygame.image.load("assets/sprites/Skeleton/Death/Death-Sheet.png").convert()), [6, 1], [255, 255, 255])]
 
     #animation_index = {"idle":0, "run":1, "death":2}
     global notifications
     notifications = []
         
     global level_adjustments
-    level_adjustments = [[3*crate.get_width(), 5*crate.get_height() - 64], [3*crate.get_width(), 5*crate.get_height() - 64]]
+    level_adjustments = [[3*crate.get_width(), 5*crate.get_height() - 64], [3*crate.get_width(), 5*crate.get_height() - 64], [3*crate.get_width(), 5*crate.get_height() - 64]]
     
     player = Player()
     
-    wizards = [[Wizard(14*64, 8*64)], [Wizard(15*64, 7*64), Wizard(15*64, 11*64)]]
+    wizards = [[Wizard(14*64, 8*64)], [Wizard(15*64, 7*64), Wizard(15*64, 11*64)], [Wizard(12*64, 4*64), Skeleton(20*64, 11*64), Skeleton(9*64, 8*64), Skeleton(20*64, 4*64)]]
 
     above_player = []
     below_player = []
 
-    levels = [load_level("assets/maps/csv/crates_lvl_1.csv"), load_level("assets/maps/csv/crates_lvl_2.csv")]
-    potions = [[], []]
+    levels = [load_level("assets/maps/csv/crates_lvl_1.csv"), load_level("assets/maps/csv/crates_lvl_2.csv"), load_level("assets/maps/csv/crates_lvl_3.csv")]
+    potions = [[], [], []]
 
     crates = []
 
     global current_level    
     current_level = 0
+    
+    key_coords = [random.randint(0, len(levels[current_level][0]) - 1), random.randint(0, len(levels[current_level]) - 1)]
+    while levels[current_level][key_coords[1]][key_coords[0]] != 1:
+        key_coords = [random.randint(0, len(levels[current_level][0]) - 1), random.randint(0, len(levels[current_level]) - 1)]    
     
     for i, row in enumerate(levels[current_level]):
         
@@ -602,6 +773,10 @@ async def main():
             
             if tile == 1:
                 potions[current_level][i].append(random.randint(1, 6))
+                
+                if key_coords[0] == j and key_coords[1] == i:
+                    potions[current_level][i][j] = 7
+                    
                 crates.append([(j*crate.get_width() - level_adjustments[current_level][0], i*crate.get_height() - level_adjustments[current_level][1]), pygame.Rect(j*crate.get_width() + 4 - level_adjustments[current_level][0], i*crate.get_height() + 4 - level_adjustments[current_level][1], crate.get_width() - 8, crate.get_height() - 8)])
             else:
                 potions[current_level][i].append(0)
@@ -661,7 +836,7 @@ async def main():
     key_slot_text = above_inv_font.render("Key", False, [255, 255, 255], [0, 0, 0])
     key_slot_text.set_colorkey([0, 0, 0])
     
-    win_rects = [pygame.Rect(1752, 0, 128, 164), pygame.Rect(1752, 0, 128, 164)]
+    win_rects = [pygame.Rect(1752, 0, 128, 164), pygame.Rect(1752, 0, 128, 164), pygame.Rect(1752, 0, 128, 164)]
     
     e_pressed = False
     screenshot = None
@@ -770,12 +945,7 @@ async def main():
                     if explosion[1] > 5:
                         explosion[1] = 5 
                         
-            if artifact == None:
-                if player.crate == artifact_crate:
-                    if not player.has_artifact:
-                        notifications.append(Notification(key_notification))
-                    player.has_artifact = True
-            else:
+            if artifact != None:
                 if not player.has_artifact:
                     win.blit(key, (artifact.x, artifact.y))
                     if player.rect.colliderect(artifact):
@@ -942,18 +1112,21 @@ async def main():
 
                     player = Player()
     
-                    wizards = [[Wizard(14*64, 8*64)], [Wizard(15*64, 7*64), Wizard(15*64, 11*64)]]
+                    wizards = [[Wizard(14*64, 8*64)], [Wizard(15*64, 7*64), Wizard(15*64, 11*64)], [Wizard(12*64, 4*64), Skeleton(20*64, 11*64), Skeleton(9*64, 8*64), Skeleton(20*64, 4*64)]]
                     
                     bullet_manager.bullets.clear()
 
                     above_player = []
                     below_player = []
 
-                    levels = [load_level("assets/maps/csv/crates_lvl_1.csv"), load_level("assets/maps/csv/crates_lvl_2.csv")]
-                    potions = [[], []]
+                    potions = [[], [], []]
 
                     crates = []
 
+                    key_coords = [random.randint(0, len(levels[current_level][0]) - 1), random.randint(0, len(levels[current_level]) - 1)]
+                    while levels[current_level][key_coords[1]][key_coords[0]] != 1:
+                        key_coords = [random.randint(0, len(levels[current_level][0]) - 1), random.randint(0, len(levels[current_level]) - 1)]    
+                    
                     for i, row in enumerate(levels[current_level]):
                         
                         potions[current_level].append([])
@@ -962,6 +1135,10 @@ async def main():
                             
                             if tile == 1:
                                 potions[current_level][i].append(random.randint(1, 6))
+                                
+                                if key_coords[0] == j and key_coords[1] == i:
+                                    potions[current_level][i][j] = 7
+                                    
                                 crates.append([(j*crate.get_width() - level_adjustments[current_level][0], i*crate.get_height() - level_adjustments[current_level][1]), pygame.Rect(j*crate.get_width() + 4 - level_adjustments[current_level][0], i*crate.get_height() + 4 - level_adjustments[current_level][1], crate.get_width() - 8, crate.get_height() - 8)])
                             else:
                                 potions[current_level][i].append(0)
