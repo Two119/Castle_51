@@ -948,7 +948,7 @@ async def main():
             if artifact != None:
                 if not player.has_artifact:
                     win.blit(key, (artifact.x, artifact.y))
-                    if player.rect.colliderect(artifact):
+                    if player.rect.colliderect(artifact) and (player.crate is None):
                         notifications.append(Notification(key_notification))
                         player.has_artifact = True
             
