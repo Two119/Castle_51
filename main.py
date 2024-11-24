@@ -744,22 +744,22 @@ async def main():
     notifications = []
         
     global level_adjustments
-    level_adjustments = [[3*crate.get_width(), 5*crate.get_height() - 64], [3*crate.get_width(), 5*crate.get_height() - 64], [3*crate.get_width(), 5*crate.get_height() - 64]]
+    level_adjustments = [[3*crate.get_width(), 5*crate.get_height() - 64], [3*crate.get_width(), 5*crate.get_height() - 64], [3*crate.get_width(), 5*crate.get_height() - 64], [3*crate.get_width(), 5*crate.get_height() - 64]]
     
     player = Player()
     
-    wizards = [[Wizard(14*64, 8*64)], [Wizard(15*64, 7*64), Wizard(15*64, 11*64)], [Wizard(12*64, 4*64), Skeleton(20*64, 11*64), Skeleton(9*64, 8*64), Skeleton(20*64, 4*64)]]
+    wizards = [[Wizard(14*64, 8*64)], [Wizard(15*64, 7*64), Wizard(15*64, 11*64)], [Wizard(12*64, 4*64), Skeleton(20*64, 11*64), Skeleton(9*64, 8*64), Skeleton(20*64, 4*64)], [Skeleton(15*64 - 16, 7.5*64), Wizard(20*64, 11*64), Wizard(9*64, 8*64), Wizard(20*64, 4*64)]]
 
     above_player = []
     below_player = []
 
-    levels = [load_level("assets/maps/csv/crates_lvl_1.csv"), load_level("assets/maps/csv/crates_lvl_2.csv"), load_level("assets/maps/csv/crates_lvl_3.csv")]
-    potions = [[], [], []]
+    levels = [load_level("assets/maps/csv/crates_lvl_1.csv"), load_level("assets/maps/csv/crates_lvl_2.csv"), load_level("assets/maps/csv/crates_lvl_3.csv"), load_level("assets/maps/csv/crates_lvl_4.csv")]
+    potions = [[], [], [], []]
 
     crates = []
 
     global current_level    
-    current_level = 0
+    current_level = 3
     
     key_coords = [random.randint(0, len(levels[current_level][0]) - 1), random.randint(0, len(levels[current_level]) - 1)]
     while levels[current_level][key_coords[1]][key_coords[0]] != 1:
@@ -836,7 +836,7 @@ async def main():
     key_slot_text = above_inv_font.render("Key", False, [255, 255, 255], [0, 0, 0])
     key_slot_text.set_colorkey([0, 0, 0])
     
-    win_rects = [pygame.Rect(1752, 0, 128, 164), pygame.Rect(1752, 0, 128, 164), pygame.Rect(1752, 0, 128, 164)]
+    win_rects = [pygame.Rect(1784, 0, 152, 196), pygame.Rect(1784, 0, 152, 196), pygame.Rect(1784, 0, 152, 196), pygame.Rect(1784, 0, 152, 196)]
     
     e_pressed = False
     screenshot = None
@@ -1112,14 +1112,14 @@ async def main():
 
                     player = Player()
     
-                    wizards = [[Wizard(14*64, 8*64)], [Wizard(15*64, 7*64), Wizard(15*64, 11*64)], [Wizard(12*64, 4*64), Skeleton(20*64, 11*64), Skeleton(9*64, 8*64), Skeleton(20*64, 4*64)]]
-                    
+                    wizards = [[Wizard(14*64, 8*64)], [Wizard(15*64, 7*64), Wizard(15*64, 11*64)], [Wizard(12*64, 4*64), Skeleton(20*64, 11*64), Skeleton(9*64, 8*64), Skeleton(20*64, 4*64)], [Skeleton(15*64 - 16, 7.5*64), Wizard(20*64, 11*64), Wizard(9*64, 8*64), Wizard(20*64, 4*64)]]
+
                     bullet_manager.bullets.clear()
 
                     above_player = []
                     below_player = []
 
-                    potions = [[], [], []]
+                    potions = [[], [], [], []]
 
                     crates = []
 
@@ -1150,7 +1150,7 @@ async def main():
             for count, button in enumerate(title_screen_buttons):
                 button.update()
                 win.blit(title_screen_text[count][0], [title_screen_text[count][1][0], title_screen_text[count][1][1] + button.current*4])
-                
+        #pygame.draw.rect(win, [255, 0, 0], win_rects[current_level])
         pygame.display.update()
         await asyncio.sleep(0)
 asyncio.run(main())
