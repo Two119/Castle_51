@@ -748,7 +748,7 @@ async def main():
     
     player = Player()
     
-    wizards = [[Wizard(14*64, 8*64)], [Wizard(15*64, 7*64), Wizard(15*64, 11*64)], [Wizard(12*64, 4*64), Skeleton(20*64, 11*64), Skeleton(9*64, 8*64), Skeleton(20*64, 4*64)], [Skeleton(15*64 - 16, 7.5*64), Wizard(20*64, 11*64), Wizard(9*64, 8*64), Wizard(20*64, 4*64)]]
+    wizards = [[Wizard(14*64, 8*64)], [Wizard(15*64, 7*64), Wizard(15*64, 11*64)], [Wizard(12*64, 4*64), Skeleton(20*64, 11*64), Skeleton(9*64, 8*64), Skeleton(20*64, 4*64)], [Skeleton(15*64 - 16, 7.5*64), Skeleton(21*64, 4.5*64), Skeleton(7*64, 4.5*64), Skeleton(21*64, 11*64), Skeleton(7*64, 11*64) , Wizard(20*64, 11*64), Wizard(9*64, 8*64)]]
 
     above_player = []
     below_player = []
@@ -759,7 +759,7 @@ async def main():
     crates = []
 
     global current_level    
-    current_level = 3
+    current_level = 0
     
     key_coords = [random.randint(0, len(levels[current_level][0]) - 1), random.randint(0, len(levels[current_level]) - 1)]
     while levels[current_level][key_coords[1]][key_coords[0]] != 1:
@@ -1112,7 +1112,7 @@ async def main():
 
                     player = Player()
     
-                    wizards = [[Wizard(14*64, 8*64)], [Wizard(15*64, 7*64), Wizard(15*64, 11*64)], [Wizard(12*64, 4*64), Skeleton(20*64, 11*64), Skeleton(9*64, 8*64), Skeleton(20*64, 4*64)], [Skeleton(15*64 - 16, 7.5*64), Wizard(20*64, 11*64), Wizard(9*64, 8*64), Wizard(20*64, 4*64)]]
+                    wizards = [[Wizard(14*64, 8*64)], [Wizard(15*64, 7*64), Wizard(15*64, 11*64)], [Wizard(12*64, 4*64), Skeleton(20*64, 11*64), Skeleton(9*64, 8*64), Skeleton(20*64, 4*64)], [Skeleton(15*64 - 16, 7.5*64), Skeleton(21*64, 4.5*64), Skeleton(7*64, 4.5*64), Skeleton(21*64, 11*64), Skeleton(7*64, 11*64) , Wizard(20*64, 11*64), Wizard(9*64, 8*64)]]
 
                     bullet_manager.bullets.clear()
 
