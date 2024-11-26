@@ -111,6 +111,31 @@ def play():
     screen_state = 1
     player.alive = False
     
+def resume():
+    global screen_state
+    global screenshot
+    screen_state = 1
+    screenshot = None
+    
+global transitioning
+transitioning = False
+    
+def menu():
+    global transitioning
+    transitioning = True
+    
+    global screen_state
+    screen_state = 1
+
+    player.alive = False
+    
+def pause():
+    global screenshot
+    screenshot = win.copy()
+    screenshot.blit(small_button_spritesheet.sheet[0][0], small_button_pos)
+    global screen_state
+    screen_state = 2
+    
 def show_credits():
     global screen_state
     screen_state = 2
@@ -118,11 +143,21 @@ def show_credits():
 button_spritesheet = SpriteSheet(scale_image(pygame.image.load("assets/sprites/buttons.png").convert()), [2, 1], [0, 0, 0])
 button_center_pos = [(win.get_width() - button_spritesheet.size[0])/2, (win.get_height() - button_spritesheet.size[1])/2]
 
+small_button_spritesheet = SpriteSheet(scale_image(pygame.image.load("assets/sprites/small_buttons.png").convert()), [2, 1], [255, 255, 255])
+small_button_pos = [(win.get_width() - 64*4)/2 + 276, win.get_height() - 88]
+
 title_screen_font = pygame.font.Font("assets/font/yoster.ttf", 30)
 title_screen_buttons = [Button(button_center_pos, button_spritesheet.sheet[0], play), Button([button_center_pos[0], button_center_pos[1] + 128], button_spritesheet.sheet[0], show_credits)]
-title_screen_text = [[title_screen_font.render("Play", False, [255, 255, 255], [0, 0, 0]), [title_screen_buttons[0].pos[0] + 24, title_screen_buttons[0].pos[1] + 14]], [title_screen_font.render("Credit", False, [255, 255, 255], [0, 0, 0]), [title_screen_buttons[1].pos[0] + 10, title_screen_buttons[1].pos[1] + 14]]]
+title_screen_text = [[title_screen_font.render("Play", False, [255, 255, 255], [0, 0, 0]), [title_screen_buttons[0].pos[0] + 36, title_screen_buttons[0].pos[1] + 18]], [title_screen_font.render("Credit", False, [255, 255, 255], [0, 0, 0]), [title_screen_buttons[1].pos[0] + 22, title_screen_buttons[1].pos[1] + 18]]]
 title_screen_text[0][0].set_colorkey((0, 0, 0))
 title_screen_text[1][0].set_colorkey((0, 0, 0))
+
+escape_screen_buttons = [Button(button_center_pos, button_spritesheet.sheet[0], menu), Button([button_center_pos[0], button_center_pos[1] + 88], button_spritesheet.sheet[0], resume)]
+escape_screen_text = [[title_screen_font.render("Menu", False, [255, 255, 255], [0, 0, 0]), [title_screen_buttons[0].pos[0] + 36, title_screen_buttons[0].pos[1] + 18]], [title_screen_font.render("Back", False, [255, 255, 255], [0, 0, 0]), [title_screen_buttons[1].pos[0] + 32, title_screen_buttons[1].pos[1] - 22]]]
+escape_screen_text[0][0].set_colorkey((0, 0, 0))
+escape_screen_text[1][0].set_colorkey((0, 0, 0))
+
+pause_button = Button(small_button_pos, small_button_spritesheet.sheet[0], pause)
 
 async def main():    
     class Player:
@@ -352,37 +387,7 @@ async def main():
                 self.anim_time = time.time()
         
         def update(self):
-
-            """if self.vel[0] == 0 and self.vel[1] == 0:
-                self.frame[1] = 0
-            else:
-                self.frame[1] = 1
-            
-            if pygame.key.get_pressed()[pygame.K_RIGHT]:
-                self.dir = 0
-                self.vel[0] = (self.speed + self.speed_effect)*1
-                self.frame[1] = 1
-                
-            elif pygame.key.get_pressed()[pygame.K_LEFT]:
-                self.dir = 1
-                self.vel[0] = (self.speed + self.speed_effect)*-1
-                self.frame[1] = 1
-                
-            else:
-                self.vel[0] = 0
-                if self.vel[1] == 0:
-                    self.frame[1] = 0
-                    
-            if pygame.key.get_pressed()[pygame.K_UP]:
-                self.vel[1] = (self.speed + self.speed_effect)*-1
-                self.frame[1] = 1
-                
-            elif pygame.key.get_pressed()[pygame.K_DOWN]:
-                self.vel[1] =(self.speed + self.speed_effect)*1
-                self.frame[1] = 1
-                
-            else:
-                self.vel[1] = 0"""         
+     
             if not self.wide_rect.colliderect(player.wide_rect):
                 self.angle = angle_between((self.pos, player.pos))               
                 self.vel = [self.speed*math.cos(math.radians(self.angle)), self.speed*math.sin(math.radians(self.angle))]
@@ -521,37 +526,7 @@ async def main():
                 self.anim_time = time.time()
         
         def update(self):
-
-            """if self.vel[0] == 0 and self.vel[1] == 0:
-                self.frame[1] = 0
-            else:
-                self.frame[1] = 1
-            
-            if pygame.key.get_pressed()[pygame.K_RIGHT]:
-                self.dir = 0
-                self.vel[0] = (self.speed + self.speed_effect)*1
-                self.frame[1] = 1
-                
-            elif pygame.key.get_pressed()[pygame.K_LEFT]:
-                self.dir = 1
-                self.vel[0] = (self.speed + self.speed_effect)*-1
-                self.frame[1] = 1
-                
-            else:
-                self.vel[0] = 0
-                if self.vel[1] == 0:
-                    self.frame[1] = 0
-                    
-            if pygame.key.get_pressed()[pygame.K_UP]:
-                self.vel[1] = (self.speed + self.speed_effect)*-1
-                self.frame[1] = 1
-                
-            elif pygame.key.get_pressed()[pygame.K_DOWN]:
-                self.vel[1] =(self.speed + self.speed_effect)*1
-                self.frame[1] = 1
-                
-            else:
-                self.vel[1] = 0"""         
+      
             if not self.wide_rect.colliderect(player.wide_rect):
                 self.angle = angle_between((self.pos, player.pos))               
                 
@@ -840,8 +815,10 @@ async def main():
     
     win_rects = [pygame.Rect(1784, 0, 152, 196), pygame.Rect(1784, 0, 152, 196), pygame.Rect(1784, 0, 152, 196), pygame.Rect(1784, 0, 152, 196)]
     
-    e_pressed = False
+    global screenshot
     screenshot = None
+    
+    e_pressed = False
     dark_overlay_surf = pygame.Surface((win.get_width(), win.get_height()))
     dark_overlay_surf.fill([0, 0, 0])
     dark_overlay_surf.set_alpha(75)
@@ -849,6 +826,10 @@ async def main():
     
     global current_fps
     current_fps = 60
+    
+    
+    global screen_state
+    global transitioning
     
     while True:
 
@@ -1091,6 +1072,8 @@ async def main():
                 if current_level > len(levels) - 1:
                     current_level -= 1
             
+            pause_button.update() 
+            
             if not player.alive and screenshot is not None:
                 win.blit(screenshot, [0,0])
                 win.blit(dark_overlay_surf, [0,0])
@@ -1100,7 +1083,7 @@ async def main():
                 if player.win:
                     win.blit(win_text, [(win.get_width() - win_text.get_width())/2, (win.get_height() - win_text.get_height())/2])
                 else:
-                    if player.health <= 0:
+                    if player.health <= 0 and not transitioning:
                         win.blit(death_text, [(win.get_width() - death_text.get_width())/2, (win.get_height() - death_text.get_height())/2])
                 
                 if radius > 1000:
@@ -1153,11 +1136,28 @@ async def main():
                                     
                     artifact = None                
                     artifact_crate = random.randint(0, len(crates))
-        
+                    
+                    if transitioning:
+                        transitioning = False
+                        screen_state = 0
+                    
+            if pygame.key.get_pressed()[pygame.K_ESCAPE] and player.alive:
+                screen_state = 2
+                screenshot = win.copy()   
+            
         elif screen_state == 0:
             for count, button in enumerate(title_screen_buttons):
                 button.update()
                 win.blit(title_screen_text[count][0], [title_screen_text[count][1][0], title_screen_text[count][1][1] + button.current*4])
+        
+        elif screen_state == 2:
+                
+            win.blit(screenshot, [0,0])
+            win.blit(dark_overlay_surf, [0,0])
+            
+            for count, button in enumerate(escape_screen_buttons):
+                button.update()
+                win.blit(escape_screen_text[count][0], [escape_screen_text[count][1][0], escape_screen_text[count][1][1] + button.current*4])
         #pygame.draw.rect(win, [255, 0, 0], win_rects[current_level])
         pygame.display.update()
         await asyncio.sleep(0)
