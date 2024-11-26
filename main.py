@@ -27,32 +27,6 @@ def load_level(filename: str):
         f.close()
         return level
     
-def adjust_angles_to_avoid_collision(obj1, obj2):
-    dx = obj2.pos[0] - obj1.pos[0]
-    dy = obj2.pos[1] - obj1.pos[1]
-    distance = math.sqrt(dx**2 + dy**2)
-    
-    collision_threshold = 150
-
-    if distance < collision_threshold:  
-        collision_angle = math.atan2(dy, dx)
-
-        obj1_goal_angle = obj1.angle
-        obj2_goal_angle = obj2.angle
-
-        obj1.angle = collision_angle + math.pi / 2
-        obj2.angle = collision_angle - math.pi / 2
-
-        def blend_angles(current_angle, target_angle, weight=0.8):
-            return (1 - weight) * current_angle + weight * target_angle
-
-        obj1.angle = blend_angles(obj1.angle, obj1_goal_angle)
-        obj2.angle = blend_angles(obj2.angle, obj2_goal_angle)
-
-        # Normalize angles to the range [-pi, pi]
-        obj1.angle = (obj1.angle + math.pi) % (2 * math.pi) - math.pi
-        obj2.angle = (obj2.angle + math.pi) % (2 * math.pi) - math.pi
-    
 class SpriteSheet:
     def __init__(self, sheet, size, colorkey = [0, 0, 0]):
         self.spritesheet = sheet
@@ -133,7 +107,9 @@ screen_state = 0
         
 def play():
     global screen_state
+    global player
     screen_state = 1
+    player.alive = False
     
 def show_credits():
     global screen_state
@@ -724,6 +700,31 @@ async def main():
                 bullet[0].x += self.bullet_speed * math.cos(math.radians(bullet[1])) * (60/current_fps)
                 bullet[0].y += self.bullet_speed * math.sin(math.radians(bullet[1])) * (60/current_fps)
     
+    class MuiscPlayer:
+        def __init__(self):
+            self.songs = [pygame.mixer.Sound("assets/songs/lvl1.ogg"), pygame.mixer.Sound("assets/songs/lvl2.ogg"), pygame.mixer.Sound("assets/songs/lvl3.ogg"), pygame.mixer.Sound("assets/songs/lvl4.ogg")]
+            self.title_songs = [pygame.mixer.Sound("assets/songs/title1.ogg")]
+            self.bg_channel = pygame.mixer.Channel(0)
+            self.player_hurt_channel = pygame.mixer.Channel(1)
+            self.crate_explode_channel = pygame.mixer.Channel(2)
+            self.found_key_channel = pygame.mixer.Channel(2)
+        def update(self):
+            if not self.bg_channel.get_busy():
+                if screen_state == 1:
+                    try:
+                        self.bg_channel.play(self.songs[current_level])
+                    except:
+                        pass
+                else:
+                    try:
+                        self.bg_channel.play(self.title_songs[random.randint(0, len(self.title_songs) - 1)])
+                    except:
+                        pass
+            if not player.alive:
+                self.bg_channel.set_volume((1000 - radius*1.5) / 2000)
+                
+    music_player = MuiscPlayer()            
+    
     bullet_manager = BulletManager()
     
     crate = scale_image(pygame.image.load("assets/sprites/crate.png").convert())
@@ -746,6 +747,7 @@ async def main():
     global level_adjustments
     level_adjustments = [[3*crate.get_width(), 5*crate.get_height() - 64], [3*crate.get_width(), 5*crate.get_height() - 64], [3*crate.get_width(), 5*crate.get_height() - 64], [3*crate.get_width(), 5*crate.get_height() - 64]]
     
+    global player
     player = Player()
     
     wizards = [[Wizard(14*64, 8*64)], [Wizard(15*64, 7*64), Wizard(15*64, 11*64)], [Wizard(12*64, 4*64), Skeleton(20*64, 11*64), Skeleton(9*64, 8*64), Skeleton(20*64, 4*64)], [Skeleton(21*64, 4.5*64), Skeleton(7*64, 4.5*64), Skeleton(21*64, 11*64), Skeleton(7*64, 11*64)]]
@@ -856,6 +858,8 @@ async def main():
             
         win.fill([0, 0, 0])
         win.blit(bg, [0, 0])
+        
+        music_player.update()
         
         clock.tick(60)
         
@@ -1096,9 +1100,13 @@ async def main():
                 if player.win:
                     win.blit(win_text, [(win.get_width() - win_text.get_width())/2, (win.get_height() - win_text.get_height())/2])
                 else:
-                    win.blit(death_text, [(win.get_width() - death_text.get_width())/2, (win.get_height() - death_text.get_height())/2])
+                    if player.health <= 0:
+                        win.blit(death_text, [(win.get_width() - death_text.get_width())/2, (win.get_height() - death_text.get_height())/2])
                 
                 if radius > 1000:
+                    
+                    music_player.bg_channel.stop()
+                    music_player.bg_channel.set_volume(1)
                     
                     radius = 0
                     
