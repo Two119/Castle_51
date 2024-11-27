@@ -73,6 +73,60 @@ class Button:
         win.blit(self.textures[self.current], self.pos)
         self.rect = self.textures[self.current].get_rect(topleft=self.pos)
         
+class Slider:
+    def __init__(self, pos):
+        self.overall_rect = pygame.Rect(pos[0] - 16, pos[1] - 16, 300, 60)
+        self.rect = pygame.Rect(pos[0] + 20, pos[1] + 8, 200, 12)
+        self.choice_rect = pygame.Rect(pos[0] + 204, pos[1] + 2, 16, 24)
+        self.pos = pos
+        self.value = 1
+    def update(self):
+        m_pos = pygame.mouse.get_pos()
+        m_rect = pygame.Rect(m_pos[0], m_pos[1], 12, 18)
+        
+        if (self.choice_rect.colliderect(m_rect) or self.rect.colliderect(m_rect)) and pygame.mouse.get_pressed()[0]:
+            self.choice_rect.x = m_pos[0]
+            
+            if self.choice_rect.x > self.pos[0] + 204:
+                self.choice_rect.x = self.pos[0] + 204
+                
+            if self.choice_rect.x < self.pos[0] + 20:
+                self.choice_rect.x = self.pos[0] + 20
+            
+        if self.choice_rect.x <= self.pos[0] + 20:
+            self.value = 0.1
+        else:
+            if self.choice_rect.x <= self.pos[0] + 40:
+                self.value = 0.2
+            else:
+                if self.choice_rect.x <= self.pos[0] + 60:
+                    self.value = 0.3
+                else:
+                    if self.choice_rect.x <= self.pos[0] + 80:
+                        self.value = 0.4
+                    else:
+                        if self.choice_rect.x <= self.pos[0] + 100:
+                            self.value = 0.5
+                        else:
+                            if self.choice_rect.x <= self.pos[0] + 120:
+                                self.value = 0.6
+                            else:
+                                if self.choice_rect.x <= self.pos[0] + 140:
+                                    self.value = 0.7
+                                else:
+                                    if self.choice_rect.x <= self.pos[0] + 160:
+                                        self.value = 0.8
+                                    else:
+                                        if self.choice_rect.x <= self.pos[0] + 180:
+                                            self.value = 0.9
+                                        else:
+                                            if self.choice_rect.x <= self.pos[0] + 200:
+                                                self.value = 1
+        
+        pygame.draw.rect(win, (48,208,216), self.rect)
+        pygame.draw.rect(win, [200, 200, 200], self.choice_rect)
+        
+        
 class Notification:
     def __init__(self, surf: pygame.Surface):
         self.surf = surf
@@ -219,12 +273,12 @@ async def main():
             #pygame.draw.rect(win, [255, 0, 0], self.rect)
             #pygame.draw.rect(win, [255, 0, 0], self.wide_rect)
             if self.crate == None:
-                if pygame.key.get_pressed()[pygame.K_d]:
+                if pygame.key.get_pressed()[pygame.K_d] or pygame.key.get_pressed()[pygame.K_RIGHT]:
                     self.dir = 0
                     self.vel[0] = (self.speed + self.speed_effect)*1
                     self.frame[1] = 1
                     
-                elif pygame.key.get_pressed()[pygame.K_a]:
+                elif pygame.key.get_pressed()[pygame.K_a] or pygame.key.get_pressed()[pygame.K_LEFT]:
                     self.dir = 1
                     self.vel[0] = (self.speed + self.speed_effect)*-1
                     self.frame[1] = 1
@@ -234,11 +288,11 @@ async def main():
                     if self.vel[1] == 0:
                         self.frame[1] = 0
                         
-                if pygame.key.get_pressed()[pygame.K_w]:
+                if pygame.key.get_pressed()[pygame.K_w] or pygame.key.get_pressed()[pygame.K_UP]:
                     self.vel[1] = (self.speed + self.speed_effect)*-1
                     self.frame[1] = 1
                     
-                elif pygame.key.get_pressed()[pygame.K_s]:
+                elif pygame.key.get_pressed()[pygame.K_s] or pygame.key.get_pressed()[pygame.K_DOWN]:
                     self.vel[1] =(self.speed + self.speed_effect)*1
                     self.frame[1] = 1
                     
@@ -254,7 +308,7 @@ async def main():
                         ctrl_pressed = True
                         self.crate = None
                         
-                if pygame.key.get_pressed()[pygame.K_d]:
+                if pygame.key.get_pressed()[pygame.K_d] or pygame.key.get_pressed()[pygame.K_RIGHT]:
                     if not self.pressed[0]:
                         for count, crate_ in enumerate(crates):
                             coord = [int(crate_[1].x / crate.get_width()), int(crate_[1].y / crate.get_height())]
@@ -267,7 +321,7 @@ async def main():
                 else:
                     self.pressed[0] = 0
                     
-                if pygame.key.get_pressed()[pygame.K_a]:
+                if pygame.key.get_pressed()[pygame.K_a] or pygame.key.get_pressed()[pygame.K_LEFT]:
                     if not self.pressed[1]:
                         for count, crate_ in enumerate(crates):
                             coord = [int(crate_[1].x / crate.get_width()), int(crate_[1].y / crate.get_height())]
@@ -280,7 +334,7 @@ async def main():
                 else:
                     self.pressed[1] = 0
                     
-                if pygame.key.get_pressed()[pygame.K_w]:
+                if pygame.key.get_pressed()[pygame.K_w] or pygame.key.get_pressed()[pygame.K_UP]:
                     if not self.pressed[2]:
                         for count, crate_ in enumerate(crates):
                             coord = [int(crate_[1].x / crate.get_width()), int(crate_[1].y / crate.get_height())]
@@ -293,7 +347,7 @@ async def main():
                 else:
                     self.pressed[2] = 0
                     
-                if pygame.key.get_pressed()[pygame.K_s]:
+                if pygame.key.get_pressed()[pygame.K_s] or pygame.key.get_pressed()[pygame.K_DOWN]:
                     if not self.pressed[3]:
                         for count, crate_ in enumerate(crates):
                             coord = [int(crate_[1].x / crate.get_width()), int(crate_[1].y / crate.get_height())]
@@ -690,26 +744,40 @@ async def main():
     
     class MuiscPlayer:
         def __init__(self):
-            self.songs = [pygame.mixer.Sound("assets/songs/lvl1.ogg"), pygame.mixer.Sound("assets/songs/lvl2.ogg"), pygame.mixer.Sound("assets/songs/lvl3.ogg"), pygame.mixer.Sound("assets/songs/lvl4.ogg")]
-            self.title_songs = [pygame.mixer.Sound("assets/songs/title1.ogg")]
-            self.bg_channel = pygame.mixer.Channel(0)
+            self.songs = ["assets/songs/lvl1.ogg","assets/songs/lvl2.ogg","assets/songs/lvl3.ogg", "assets/songs/lvl4.ogg"]
+
+            self.title_songs = ["assets/songs/title1.ogg"]
+            
             self.player_hurt_channel = pygame.mixer.Channel(1)
+            self.hurt_sound = pygame.mixer.Sound("assets/sounds/hurt.ogg")
+            
             self.crate_explode_channel = pygame.mixer.Channel(2)
+            self.explode_sound = pygame.mixer.Sound("assets/sounds/crate-destruction.ogg")
+            
             self.found_key_channel = pygame.mixer.Channel(2)
+            self.found_key_sound = pygame.mixer.Sound("assets/sounds/found_item.ogg")
+            
+            self.potion_drink_channel = pygame.mixer.Channel(3)
+            self.potion_sound = pygame.mixer.Sound("assets/sounds/drink.ogg")
+            
         def update(self):
-            if not self.bg_channel.get_busy():
+            if not pygame.mixer.music.get_busy():
                 if screen_state == 1:
                     try:
-                        self.bg_channel.play(self.songs[current_level])
+                        pygame.mixer.music.load(self.songs[current_level])
+                        pygame.mixer.music.play()
                     except:
                         pass
                 else:
                     try:
-                        self.bg_channel.play(self.title_songs[random.randint(0, len(self.title_songs) - 1)])
+                        pygame.mixer.music.load(self.title_songs[random.randint(0, len(self.title_songs) - 1)])
+                        pygame.mixer.music.play()
                     except:
                         pass
             if not player.alive:
-                self.bg_channel.set_volume((1000 - radius*1.5) / 2000)
+                pygame.mixer.music.set_volume((1000 - radius*1.5) / 2000)
+            else:
+                pygame.mixer.music.set_volume(music_slider.value)
                 
     class Video:
         def __init__(self, sheet, pos):
@@ -824,6 +892,9 @@ async def main():
     air_text = ui_font.render("AIR", False, [255, 255, 255], [0, 0, 0])
     air_text.set_colorkey([0, 0, 0])
     
+    music_text = ui_font.render("Music Volume", False, [255, 255, 255], [0, 0, 0])
+    music_text.set_colorkey([0, 0, 0])
+    
     suffocation_warning = ui_font.render("YOU ARE SUFFOCATING!", False, [255, 255, 255], [0, 0, 0])
     suffocation_warning.set_colorkey([0, 0, 0])
     
@@ -876,6 +947,8 @@ async def main():
     tutorial_behind_button = Button([662, 32], left_arrow_button_spritesheet.sheet[0], tutorial_backward_function)
     
     tutorial_to_menu_button = Button([(win.get_width() - button_spritesheet.size[0])/2, 100], button_spritesheet.sheet[0], menu2)
+    
+    music_slider = Slider((368 + (256-health_text.get_width())/2, 8))
     
     menu_text = title_screen_font.render("Menu", False, [255, 255, 255], [0, 0, 0])
     menu_text.set_colorkey([0, 0, 0])
@@ -1137,7 +1210,9 @@ async def main():
                 if current_level > len(levels) - 1:
                     current_level -= 1
             
-            pause_button.update() 
+            pause_button.update()
+            
+            music_slider.update()
             
             if not player.alive and screenshot is not None:
                 win.blit(screenshot, [0,0])
@@ -1153,8 +1228,8 @@ async def main():
                 
                 if radius > 1000:
                     
-                    music_player.bg_channel.stop()
-                    music_player.bg_channel.set_volume(1)
+                    pygame.mixer.music.stop()
+                    pygame.mixer.music.set_volume(1)
                     
                     radius = 0
                     
