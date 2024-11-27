@@ -53,6 +53,7 @@ class Button:
         self.click_delay = 0
         self.max_delay = 500
         self.delaying = False
+        self.pressed = False
         self.clicksound = pygame.mixer.Sound("assets/sounds/click.ogg")
     def update(self):
         self.current = 0
@@ -62,9 +63,12 @@ class Button:
             self.delaying = False
         if self.rect.collidepoint(pygame.mouse.get_pos()):
             if pygame.mouse.get_pressed()[0]:
-                if not self.delaying:
+                if not self.delaying and not self.pressed:
                     self.onlick()
                     self.clicksound.play()
+                self.pressed = True
+            else:
+                self.pressed = False
             self.current = 1
         win.blit(self.textures[self.current], self.pos)
         self.rect = self.textures[self.current].get_rect(topleft=self.pos)
@@ -129,6 +133,10 @@ def menu():
 
     player.alive = False
     
+def menu2():
+    global screen_state
+    screen_state = 0
+    
 def pause():
     global screenshot
     screenshot = win.copy()
@@ -136,9 +144,13 @@ def pause():
     global screen_state
     screen_state = 2
     
+def tutorial_start():
+    global screen_state
+    screen_state = 4
+    
 def show_credits():
     global screen_state
-    screen_state = 2
+    screen_state = 3
         
 button_spritesheet = SpriteSheet(scale_image(pygame.image.load("assets/sprites/buttons.png").convert()), [2, 1], [0, 0, 0])
 button_center_pos = [(win.get_width() - button_spritesheet.size[0])/2, (win.get_height() - button_spritesheet.size[1])/2]
@@ -147,13 +159,14 @@ small_button_spritesheet = SpriteSheet(scale_image(pygame.image.load("assets/spr
 small_button_pos = [(win.get_width() - 64*4)/2 + 276, win.get_height() - 88]
 
 title_screen_font = pygame.font.Font("assets/font/yoster.ttf", 30)
-title_screen_buttons = [Button(button_center_pos, button_spritesheet.sheet[0], play), Button([button_center_pos[0], button_center_pos[1] + 128], button_spritesheet.sheet[0], show_credits)]
-title_screen_text = [[title_screen_font.render("Play", False, [255, 255, 255], [0, 0, 0]), [title_screen_buttons[0].pos[0] + 36, title_screen_buttons[0].pos[1] + 18]], [title_screen_font.render("Credit", False, [255, 255, 255], [0, 0, 0]), [title_screen_buttons[1].pos[0] + 22, title_screen_buttons[1].pos[1] + 18]]]
+title_screen_buttons = [Button(button_center_pos, button_spritesheet.sheet[0], play), Button([button_center_pos[0], button_center_pos[1] + 78], button_spritesheet.sheet[0], show_credits), Button([button_center_pos[0], button_center_pos[1] + 156], button_spritesheet.sheet[0], show_credits)]
+title_screen_text = [[title_screen_font.render("Play", False, [255, 255, 255], [0, 0, 0]), [title_screen_buttons[0].pos[0] + 36, title_screen_buttons[0].pos[1] + 18]], [title_screen_font.render("Learn", False, [255, 255, 255], [0, 0, 0]), [title_screen_buttons[0].pos[0] + 28, title_screen_buttons[0].pos[1] + 96]], [title_screen_font.render("Credit", False, [255, 255, 255], [0, 0, 0]), [title_screen_buttons[1].pos[0] + 22, title_screen_buttons[1].pos[1] + 96]]]
 title_screen_text[0][0].set_colorkey((0, 0, 0))
 title_screen_text[1][0].set_colorkey((0, 0, 0))
+title_screen_text[2][0].set_colorkey((0, 0, 0))
 
 escape_screen_buttons = [Button(button_center_pos, button_spritesheet.sheet[0], menu), Button([button_center_pos[0], button_center_pos[1] + 88], button_spritesheet.sheet[0], resume)]
-escape_screen_text = [[title_screen_font.render("Menu", False, [255, 255, 255], [0, 0, 0]), [title_screen_buttons[0].pos[0] + 36, title_screen_buttons[0].pos[1] + 18]], [title_screen_font.render("Back", False, [255, 255, 255], [0, 0, 0]), [title_screen_buttons[1].pos[0] + 32, title_screen_buttons[1].pos[1] - 22]]]
+escape_screen_text = [[title_screen_font.render("Menu", False, [255, 255, 255], [0, 0, 0]), [title_screen_buttons[0].pos[0] + 36, title_screen_buttons[0].pos[1] + 18]], [title_screen_font.render("Back", False, [255, 255, 255], [0, 0, 0]), [title_screen_buttons[1].pos[0] + 32, title_screen_buttons[1].pos[1] + 28]]]
 escape_screen_text[0][0].set_colorkey((0, 0, 0))
 escape_screen_text[1][0].set_colorkey((0, 0, 0))
 
@@ -698,6 +711,27 @@ async def main():
             if not player.alive:
                 self.bg_channel.set_volume((1000 - radius*1.5) / 2000)
                 
+    class Video:
+        def __init__(self, sheet, pos):
+            self.sheet = sheet
+            self.pos = pos
+            self.frame = [0, 0]
+            self.delay = time.time()
+            self.delay_duration = 0.04
+        def update(self):
+            if time.time() - self.delay >= self.delay_duration:
+                self.delay = time.time()
+                self.frame[0] += 1
+                if self.frame[0] > len(self.sheet.sheet[0]) - 1:
+                    self.frame[0] = 0
+            win.blit(self.sheet.get(self.frame), self.pos)
+            
+    crate_video = Video(SpriteSheet(pygame.image.load("assets/sprites/tutorial_gifs/enter_crate_tutorial_clip.png"), [48, 1]), [512, 600])
+    
+    esc_video = Video(SpriteSheet(scale_image(pygame.image.load("assets/sprites/tutorial_gifs/escape_tutorial_clip.png"), 1.75), [47, 1]), [512, 600])
+    esc_video.sheet.sheet[0] = esc_video.sheet.sheet[0][:38] 
+    esc_video.delay_duration = 0.065
+                
     music_player = MuiscPlayer()            
     
     bullet_manager = BulletManager()
@@ -781,6 +815,7 @@ async def main():
     inv_font = pygame.font.Font("assets/font/yoster.ttf", 20)
     above_inv_font = pygame.font.Font("assets/font/yoster.ttf", 24)
     ui_font = pygame.font.Font("assets/font/yoster.ttf", 28)
+    tutorial_font = pygame.font.Font("assets/font/yoster.ttf", 40)
     big_font = pygame.font.Font("assets/font/yoster.ttf", 64)
     
     health_text = ui_font.render("HEALTH", False, [255, 255, 255], [0, 0, 0])
@@ -814,6 +849,36 @@ async def main():
     key_slot_text.set_colorkey([0, 0, 0])
     
     win_rects = [pygame.Rect(1784, 0, 152, 196), pygame.Rect(1784, 0, 152, 196), pygame.Rect(1784, 0, 152, 196), pygame.Rect(1784, 0, 152, 196)]
+    
+    tutorial_tiles = [pygame.image.load("assets/sprites/tutorial/slide1.png").convert(), pygame.image.load("assets/sprites/tutorial/slide2.png").convert(), pygame.image.load("assets/sprites/tutorial/slide3.png").convert(), pygame.image.load("assets/sprites/tutorial/slide4.png").convert()]
+    
+    tutorial_tile_indicators = [tutorial_font.render("Slide 1 out of 4", False, [255, 255, 255], [0, 0, 0]), tutorial_font.render("Slide 2 out of 4", False, [255, 255, 255], [0, 0, 0]), tutorial_font.render("Slide 3 out of 4", False, [255, 255, 255], [0, 0, 0]), tutorial_font.render("Slide 4 out of 4", False, [255, 255, 255], [0, 0, 0])]
+    
+    global current_tile
+    current_tile = 0
+    
+    right_arrow_button_spritesheet = SpriteSheet(scale_image(pygame.image.load("assets/sprites/right_arrow_buttons.png").convert()), [2, 1], [255, 255, 255])
+    left_arrow_button_spritesheet = SpriteSheet(scale_image(pygame.image.load("assets/sprites/left_arrow_buttons.png").convert()), [2, 1], [255, 255, 255])
+    
+    def tutorial_forward_function():
+        global current_tile
+        if current_tile < 3:
+            current_tile += 1
+        
+    def tutorial_backward_function():
+        global current_tile
+        if current_tile > 0:
+            current_tile -= 1
+        
+        
+    tutorial_forward_button = Button([1200, 32], right_arrow_button_spritesheet.sheet[0], tutorial_forward_function)
+    
+    tutorial_behind_button = Button([662, 32], left_arrow_button_spritesheet.sheet[0], tutorial_backward_function)
+    
+    tutorial_to_menu_button = Button([(win.get_width() - button_spritesheet.size[0])/2, 100], button_spritesheet.sheet[0], menu2)
+    
+    menu_text = title_screen_font.render("Menu", False, [255, 255, 255], [0, 0, 0])
+    menu_text.set_colorkey([0, 0, 0])
     
     global screenshot
     screenshot = None
@@ -1141,7 +1206,7 @@ async def main():
                         transitioning = False
                         screen_state = 0
                     
-            if pygame.key.get_pressed()[pygame.K_ESCAPE] and player.alive:
+            if pygame.key.get_pressed()[pygame.K_SPACE] and player.alive:
                 screen_state = 2
                 screenshot = win.copy()   
             
@@ -1158,6 +1223,24 @@ async def main():
             for count, button in enumerate(escape_screen_buttons):
                 button.update()
                 win.blit(escape_screen_text[count][0], [escape_screen_text[count][1][0], escape_screen_text[count][1][1] + button.current*4])
+                
+        elif screen_state == 3:
+            
+            win.blit(tutorial_tiles[current_tile], [0, 0])
+            
+            win.blit(tutorial_tile_indicators[current_tile], [(win.get_width() - tutorial_tile_indicators[current_tile].get_width())/2, 36])
+            
+            tutorial_to_menu_button.update()
+            win.blit(menu_text, [(win.get_width() - menu_text.get_width())/2, 116 + tutorial_to_menu_button.current*4])
+            
+            if current_tile == 1:
+                crate_video.update()
+                
+            if current_tile == 3:
+                esc_video.update()
+            
+            tutorial_forward_button.update()
+            tutorial_behind_button.update()
         #pygame.draw.rect(win, [255, 0, 0], win_rects[current_level])
         pygame.display.update()
         await asyncio.sleep(0)
