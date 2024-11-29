@@ -219,12 +219,12 @@ async def main():
             #pygame.draw.rect(win, [255, 0, 0], self.rect)
             #pygame.draw.rect(win, [255, 0, 0], self.wide_rect)
             if self.crate == None:
-                if pygame.key.get_pressed()[pygame.K_RIGHT]:
+                if pygame.key.get_pressed()[pygame.K_d]:
                     self.dir = 0
                     self.vel[0] = (self.speed + self.speed_effect)*1
                     self.frame[1] = 1
                     
-                elif pygame.key.get_pressed()[pygame.K_LEFT]:
+                elif pygame.key.get_pressed()[pygame.K_a]:
                     self.dir = 1
                     self.vel[0] = (self.speed + self.speed_effect)*-1
                     self.frame[1] = 1
@@ -234,11 +234,11 @@ async def main():
                     if self.vel[1] == 0:
                         self.frame[1] = 0
                         
-                if pygame.key.get_pressed()[pygame.K_UP]:
+                if pygame.key.get_pressed()[pygame.K_w]:
                     self.vel[1] = (self.speed + self.speed_effect)*-1
                     self.frame[1] = 1
                     
-                elif pygame.key.get_pressed()[pygame.K_DOWN]:
+                elif pygame.key.get_pressed()[pygame.K_s]:
                     self.vel[1] =(self.speed + self.speed_effect)*1
                     self.frame[1] = 1
                     
@@ -254,7 +254,7 @@ async def main():
                         ctrl_pressed = True
                         self.crate = None
                         
-                if pygame.key.get_pressed()[pygame.K_RIGHT]:
+                if pygame.key.get_pressed()[pygame.K_d]:
                     if not self.pressed[0]:
                         for count, crate_ in enumerate(crates):
                             coord = [int(crate_[1].x / crate.get_width()), int(crate_[1].y / crate.get_height())]
@@ -267,7 +267,7 @@ async def main():
                 else:
                     self.pressed[0] = 0
                     
-                if pygame.key.get_pressed()[pygame.K_LEFT]:
+                if pygame.key.get_pressed()[pygame.K_a]:
                     if not self.pressed[1]:
                         for count, crate_ in enumerate(crates):
                             coord = [int(crate_[1].x / crate.get_width()), int(crate_[1].y / crate.get_height())]
@@ -280,7 +280,7 @@ async def main():
                 else:
                     self.pressed[1] = 0
                     
-                if pygame.key.get_pressed()[pygame.K_UP]:
+                if pygame.key.get_pressed()[pygame.K_w]:
                     if not self.pressed[2]:
                         for count, crate_ in enumerate(crates):
                             coord = [int(crate_[1].x / crate.get_width()), int(crate_[1].y / crate.get_height())]
@@ -293,7 +293,7 @@ async def main():
                 else:
                     self.pressed[2] = 0
                     
-                if pygame.key.get_pressed()[pygame.K_DOWN]:
+                if pygame.key.get_pressed()[pygame.K_s]:
                     if not self.pressed[3]:
                         for count, crate_ in enumerate(crates):
                             coord = [int(crate_[1].x / crate.get_width()), int(crate_[1].y / crate.get_height())]
@@ -320,7 +320,7 @@ async def main():
                 self.air = 0
                 
             if self.air <= 0:
-                self.health -= 0.5
+                self.health -= (0.5)*(60/current_fps)
                 
             if self.health <= 0:
                 self.alive = False
@@ -328,7 +328,7 @@ async def main():
                     
             if self.crate == None:
                 if self.air < 100:
-                    self.air += 0.25
+                    self.air += (0.25)*(60/current_fps)
                 
                 try:
                     if (time.time() - self.damange_jitter_timer) < self.damange_jitter_duration:
@@ -340,7 +340,7 @@ async def main():
                 except:    
                     self.frame[0] = 0
             else:
-                self.air -= 0.75
+                self.air -= (0.75)*(60/current_fps)
                 
                 current_crate_coord = [int((crates[self.crate][1].x + level_adjustments[current_level][0])/ crate.get_width()), int((crates[self.crate][1].y + level_adjustments[current_level][1])/ crate.get_height())]
 
@@ -907,7 +907,7 @@ async def main():
         
         music_player.update()
         
-        clock.tick(60)
+        clock.tick(240)
         
         current_fps = clock.get_fps()
         
