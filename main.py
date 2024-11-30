@@ -99,6 +99,61 @@ class Notification:
         self.surf.set_alpha(int(self.alpha))
         win.blit(self.surf, self.pos)
 
+class Slider:
+    def __init__(self, pos):
+        self.overall_rect = pygame.Rect(pos[0] - 16, pos[1] - 16, 300, 60)
+        self.rect = pygame.Rect(pos[0] + 20, pos[1] + 8, 200, 12)
+        self.choice_rect = pygame.Rect(pos[0] + 204, pos[1] + 2, 16, 24)
+        self.pos = pos
+        self.value = 1
+    def update(self):
+        
+        self.overall_rect = pygame.Rect(self.pos[0] - 16, self.pos[1] - 16, 300, 60)
+        self.rect = pygame.Rect(self.pos[0] + 20, self.pos[1] + 8, 200, 12)
+        m_pos = pygame.mouse.get_pos()
+        m_rect = pygame.Rect(m_pos[0], m_pos[1], 12, 18)
+        
+        if (self.choice_rect.colliderect(m_rect) or self.rect.colliderect(m_rect)) and pygame.mouse.get_pressed()[0]:
+            self.choice_rect.x = m_pos[0]
+            
+            if self.choice_rect.x > self.pos[0] + 204:
+                self.choice_rect.x = self.pos[0] + 204
+                
+            if self.choice_rect.x < self.pos[0] + 20:
+                self.choice_rect.x = self.pos[0] + 20
+            
+        if self.choice_rect.x <= self.pos[0] + 20:
+            self.value = 0.1
+        else:
+            if self.choice_rect.x <= self.pos[0] + 40:
+                self.value = 0.2
+            else:
+                if self.choice_rect.x <= self.pos[0] + 60:
+                    self.value = 0.3
+                else:
+                    if self.choice_rect.x <= self.pos[0] + 80:
+                        self.value = 0.4
+                    else:
+                        if self.choice_rect.x <= self.pos[0] + 100:
+                            self.value = 0.5
+                        else:
+                            if self.choice_rect.x <= self.pos[0] + 120:
+                                self.value = 0.6
+                            else:
+                                if self.choice_rect.x <= self.pos[0] + 140:
+                                    self.value = 0.7
+                                else:
+                                    if self.choice_rect.x <= self.pos[0] + 160:
+                                        self.value = 0.8
+                                    else:
+                                        if self.choice_rect.x <= self.pos[0] + 180:
+                                            self.value = 0.9
+                                        else:
+                                            if self.choice_rect.x <= self.pos[0] + 200:
+                                                self.value = 1
+        
+        pygame.draw.rect(win, (48,208,216), self.rect)
+        pygame.draw.rect(win, [200, 200, 200], self.choice_rect)
 
 def isequal(color1: pygame.Color, color2: tuple) -> bool:
     if color1.r == color2[0] and color1.g == color2[1] and color1.b == color2[2]:
@@ -140,6 +195,7 @@ def play():
     global player
     State.change(1)
     player.alive = False
+    pygame.mixer.music.stop()
 
 
 def resume():
@@ -147,6 +203,10 @@ def resume():
     global screenshot
     State.change(1)
     screenshot = None
+    global music_slider
+    music_slider.pos = (441, 8)
+    music_slider.choice_rect = pygame.Rect(music_slider.pos[0], music_slider.pos[1] + 2, 16, 24)
+    music_slider.choice_rect.x += (music_slider.value * music_slider.rect.w)
 
 
 global transitioning
@@ -159,6 +219,7 @@ def menu():
     State.change(1)
 
     player.alive = False
+    pygame.mixer.music.stop()
 
 
 def menu2():
@@ -857,12 +918,9 @@ async def main():
                     fn = self.songs[current_level]
                 else:
                     fn = self.title_songs[random.randint(0, len(self.title_songs) - 1)]
-
-                print(f"-music change {fn} -")
+                    
                 pygame.mixer.music.load(fn)
                 pygame.mixer.music.play()
-                # if not player.alive:
-                #    pygame.mixer.music.set_volume((1000 - radius * 1.5) / 2000)
 
     class Video:
         def __init__(self, sheet, pos):
@@ -1112,6 +1170,12 @@ async def main():
 
     menu_text = title_screen_font.render("Menu", False, [255, 255, 255], [0, 0, 0])
     menu_text.set_colorkey([0, 0, 0])
+    
+    global music_slider
+    music_slider = Slider((368 + (256-health_text.get_width())/2, 8))
+
+    music_text = ui_font.render("Music: ", False, [255, 255, 255], [0, 0, 0])
+    music_text.set_colorkey([0, 0, 0])
 
     global screenshot
     screenshot = None
@@ -1417,6 +1481,7 @@ async def main():
 
             if player.rect.colliderect(win_rects[current_level]) and player.has_artifact:
                 player.alive = False
+                pygame.mixer.music.stop()
                 player.win = True
                 player.has_artifact = False
                 current_level += 1
@@ -1424,6 +1489,12 @@ async def main():
                     current_level -= 1
 
             pause_button.update()
+            
+            music_slider.update()
+            
+            win.blit(music_text, (music_slider.pos[0] - music_text.get_width() + 8, 8))
+            
+            pygame.mixer.music.set_volume(music_slider.value)
 
             if not player.alive and screenshot is not None:
                 win.blit(screenshot, [0, 0])
@@ -1521,14 +1592,23 @@ async def main():
 
                     artifact = None
                     artifact_crate = random.randint(0, len(crates))
-
+                    
                     if transitioning:
                         transitioning = False
                         State.change(0)
 
+                    if State.current != 0:
+                        pygame.mixer.music.stop()
+                        music_player.update()
+                        
             if pygame.key.get_pressed()[pygame.K_SPACE] and player.alive:
                 State.change(2)
                 screenshot = win.copy()
+                pygame.mixer.music.stop()
+                music_slider.pos = [escape_screen_buttons[0].pos[0] - 32, escape_screen_buttons[0].pos[1] - 64]
+                music_slider.choice_rect = pygame.Rect(music_slider.pos[0], music_slider.pos[1] + 2, 16, 24)
+                music_slider.choice_rect.x += (music_slider.value * music_slider.rect.w)
+                
 
         elif State.current == 0:
             for count, button in enumerate(title_screen_buttons):
@@ -1542,6 +1622,10 @@ async def main():
 
             win.blit(screenshot, [0, 0])
             win.blit(dark_overlay_surf, [0, 0])
+            
+            music_slider.update()
+            
+            win.blit(music_text, (music_slider.pos[0] - music_text.get_width() + 8, music_slider.pos[1]))
 
             for count, button in enumerate(escape_screen_buttons):
                 button.update()
