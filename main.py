@@ -103,7 +103,7 @@ class Slider:
     def __init__(self, pos):
         self.overall_rect = pygame.Rect(pos[0] - 16, pos[1] - 16, 300, 60)
         self.rect = pygame.Rect(pos[0] + 20, pos[1] + 8, 200, 12)
-        self.choice_rect = pygame.Rect(pos[0] + 204, pos[1] + 2, 16, 24)
+        self.choice_rect = pygame.Rect(pos[0] + 60, pos[1] + 2, 16, 24)
         self.pos = pos
         self.value = 1
     def update(self):
@@ -325,6 +325,7 @@ async def main():
             self.speed_time = time.time()
             self.damange_jitter_timer = time.time() - 3
             self.damange_jitter_duration = 1
+            self.true_rect = pygame.Rect(self.pos[0]+20, self.pos[1] + 12, 76, 116)
 
         def update_animation(self):
             if time.time() - self.anim_time >= 0.1:
@@ -340,6 +341,7 @@ async def main():
 
         def update(self):
             global ctrl_pressed
+            self.true_rect = pygame.Rect(self.pos[0]+20, self.pos[1] + 12, 76, 116)
             self.rect = pygame.Rect(self.pos[0] + 32, self.pos[1] + 12, 64, 116)
             self.wide_rect = pygame.Rect(self.pos[0], self.pos[1] - 8, 128, 144)
             # pygame.draw.rect(win, [255, 0, 0], self.rect)
@@ -453,6 +455,8 @@ async def main():
 
             if self.health <= 0:
                 self.alive = False
+                if not music_player.level_end_sfx.get_busy():
+                    music_player.level_end_sfx.play(music_player.death_sound)
                 self.health = 0
 
             if self.crate == None:
@@ -499,6 +503,8 @@ async def main():
                 if potions[current_level][current_crate_coord[1]][current_crate_coord[0]] == 7 and not self.has_artifact:
                     self.has_artifact = True
                     notifications.append(Notification(key_notification))
+                    if not music_player.found_key_channel.get_busy():
+                            music_player.found_key_channel.play(music_player.found_key_sound)
                     # print(potion_type)
 
             self.pos[0] += self.vel[0] * (60 / current_fps)
@@ -855,6 +861,8 @@ async def main():
                     self.bullets.remove(bullet)
                     player.health -= 25
                     player.damange_jitter_timer = time.time()
+                    if not music_player.player_hurt_channel.get_busy():
+                        music_player.player_hurt_channel.play(music_player.hurt_sound)
                     continue
 
                 c = 0
@@ -876,14 +884,18 @@ async def main():
                             if player.alive and not player.has_artifact:
                                 if potions[current_level][current_crate_coord[1]][current_crate_coord[0]] == 7:
                                     artifact = pygame.Rect(
-                                        rect.x + key.get_width() / 4,
-                                        rect.y + key.get_height() / 4,
+                                        rect.x + key.get_width() / 2,
+                                        rect.y + key.get_height() / 3,
                                         key.get_width(),
                                         key.get_height(),
                                     )
 
                         crates.pop(c)
                         explosions.append([(rect.x + crate.get_width() / 2, rect.y + crate.get_height() / 2), 0, time.time()])
+                        
+                        if not music_player.crate_explode_channel.get_busy():
+                            music_player.crate_explode_channel.play(music_player.explode_sound)
+                        
                         break
                     c += 1
                 win.blit(pygame.transform.rotate(self.bullet_sprite, 360 - bullet[1]), (bullet[0].x, bullet[0].y))
@@ -909,6 +921,10 @@ async def main():
 
             self.potion_drink_channel = pygame.mixer.Channel(3)
             self.potion_sound = pygame.mixer.Sound("assets/sounds/drink.ogg")
+            
+            self.level_end_sfx = pygame.mixer.Channel(4)
+            self.win_sound = pygame.mixer.Sound("assets/sounds/win.ogg")
+            self.death_sound = pygame.mixer.Sound("assets/sounds/death.ogg")
 
         def update(self):
             global State
@@ -1173,7 +1189,8 @@ async def main():
     
     global music_slider
     music_slider = Slider((368 + (256-health_text.get_width())/2, 8))
-
+    music_slider.value = 0.3
+    
     music_text = ui_font.render("Music: ", False, [255, 255, 255], [0, 0, 0])
     music_text.set_colorkey([0, 0, 0])
 
@@ -1185,6 +1202,10 @@ async def main():
     dark_overlay_surf.fill([0, 0, 0])
     dark_overlay_surf.set_alpha(75)
     radius = 0
+    
+    current_key_scale = 1
+    global zoom_factor
+    zoom_factor = 1
 
     global current_fps
     current_fps = 60
@@ -1243,42 +1264,43 @@ async def main():
             for crate_, rect in crates:
                 count += 1
                 # pygame.draw.rect(win, [255, 0, 0], rect)
-                if rect.colliderect(player.rect):
-                    if rect.y < player.rect.y:
+                if rect.colliderect(player.wide_rect):
+                    if rect.y < player.true_rect.y:
                         below_player.append(count)
                     else:
                         above_player.append(count)
 
-                    if (rect.y + rect.h) < (player.rect.y + player.rect.h):
+                    if (rect.y + rect.h) < (player.true_rect.y + player.true_rect.h):
                         below_player.append(count)
                         if count in above_player:
                             above_player.remove(count)
+                            
+                    if rect.colliderect(player.rect):
+                        if (pygame.key.get_pressed()[pygame.K_LCTRL] or pygame.key.get_pressed()[pygame.K_RCTRL]) and not ctrl_pressed:
+                            ctrl_pressed = True
+                            if player.crate == None:
+                                player.crate = count
 
-                    if (pygame.key.get_pressed()[pygame.K_LCTRL] or pygame.key.get_pressed()[pygame.K_RCTRL]) and not ctrl_pressed:
-                        ctrl_pressed = True
-                        if player.crate == None:
-                            player.crate = count
+                                if (rect.y - player.rect.y) < 64 and (rect.y - player.rect.y) > 0:
+                                    player.pos[1] = rect.y - 64
 
-                            if (rect.y - player.rect.y) < 64 and (rect.y - player.rect.y) > 0:
-                                player.pos[1] = rect.y - 64
+                        if (rect.y - player.rect.y) < 64 and (rect.y - player.rect.y) > 0:
+                            if player.vel[1] > 0:
+                                player.vel[1] = 0
+                            if (rect.y - player.rect.y) < 48 and (rect.y - player.rect.y) > 0:
+                                if player.vel[0] != 0:
+                                    if player.pos[0] - rect.x > 0:
+                                        if player.vel[0] < 0:
+                                            player.vel[0] = 0
+                                            player.pos[0] += 4
+                                    if player.pos[0] - rect.x < 0:
+                                        if player.vel[0] > 0:
+                                            player.vel[0] = 0
+                                            player.pos[0] -= 4
 
-                    if (rect.y - player.rect.y) < 64 and (rect.y - player.rect.y) > 0:
-                        if player.vel[1] > 0:
-                            player.vel[1] = 0
-                        if (rect.y - player.rect.y) < 48 and (rect.y - player.rect.y) > 0:
-                            if player.vel[0] != 0:
-                                if player.pos[0] - rect.x > 0:
-                                    if player.vel[0] < 0:
-                                        player.vel[0] = 0
-                                        player.pos[0] += 4
-                                if player.pos[0] - rect.x < 0:
-                                    if player.vel[0] > 0:
-                                        player.vel[0] = 0
-                                        player.pos[0] -= 4
-
-                    if (player.rect.y - rect.y) < 28 and (player.rect.y - rect.y) > 0:
-                        if player.vel[1] < 0:
-                            player.vel[1] = 0
+                        if (player.rect.y - rect.y) < 28 and (player.rect.y - rect.y) > 0:
+                            if player.vel[1] < 0:
+                                player.vel[1] = 0
 
                 else:
                     below_player.append(count)
@@ -1296,10 +1318,21 @@ async def main():
 
             if artifact != None:
                 if not player.has_artifact:
-                    win.blit(key, (artifact.x, artifact.y))
+                        
+                    current_key_scale += 0.025*zoom_factor*(60/clock.get_fps())
+                    if current_key_scale <= 0.8:
+                        zoom_factor = 1
+                    if current_key_scale >= 1.2:
+                        zoom_factor = -1
+                    
+                    current_key_sprite = scale_image(key, current_key_scale)
+                    win.blit(current_key_sprite, (artifact.x - current_key_sprite.get_width()/2, artifact.y - current_key_sprite.get_height()/2))
+                    
                     if player.rect.colliderect(artifact) and (player.crate is None):
                         notifications.append(Notification(key_notification))
                         player.has_artifact = True
+                        if not music_player.found_key_channel.get_busy():
+                            music_player.found_key_channel.play(music_player.found_key_sound)
 
             for x in below_player:
                 win.blit(crate, crates[x][0])
@@ -1399,18 +1432,25 @@ async def main():
                             player.inventory["speed_potions"] -= 1
                             player.speed_effect = 2.5
                             player.speed_time = time.time()
+                            if not music_player.potion_drink_channel.get_busy():
+                                music_player.potion_drink_channel.play(music_player.potion_sound)
 
                     if player.inv_no == 1:
                         if player.inventory["air_potions"] > 0:
                             player.inventory["air_potions"] -= 1
                             player.air += 33
-
+                            if not music_player.potion_drink_channel.get_busy():
+                                music_player.potion_drink_channel.play(music_player.potion_sound)
+                                
                     if player.inv_no == 2:
                         if player.inventory["health_potions"] > 0:
                             player.inventory["health_potions"] -= 1
                             player.health += 33
                             if player.health > 100:
                                 player.health = 100
+                            if not music_player.potion_drink_channel.get_busy():
+                                music_player.potion_drink_channel.play(music_player.potion_sound)
+                            
                     e_pressed = True
 
             if not pygame.key.get_pressed()[pygame.K_e]:
