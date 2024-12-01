@@ -908,7 +908,7 @@ async def main():
 
     class MusicPlayer:
         def __init__(self):
-            self.songs = ["assets/songs/lvl1.ogg", "assets/songs/lvl2.ogg", "assets/songs/lvl3.ogg", "assets/songs/lvl4.ogg"]
+            self.songs = ["assets/songs/lvl1.ogg", "assets/songs/lvl2.ogg", "assets/songs/lvl3.ogg", "assets/songs/lvl4.ogg", "assets/songs/lvl5.ogg", "assets/songs/title1.ogg"]
 
             self.title_songs = ["assets/songs/title1.ogg"]
 
@@ -1018,6 +1018,8 @@ async def main():
         [3 * crate.get_width(), 5 * crate.get_height() - 64],
         [3 * crate.get_width(), 5 * crate.get_height() - 64],
         [3 * crate.get_width(), 5 * crate.get_height() - 64],
+        [3 * crate.get_width(), 5 * crate.get_height() - 64],
+        [3 * crate.get_width(), 5 * crate.get_height() - 64],
     ]
 
     global player
@@ -1028,6 +1030,8 @@ async def main():
         [Wizard(15 * 64, 7 * 64), Wizard(15 * 64, 11 * 64)],
         [Wizard(12 * 64, 4 * 64), Skeleton(20 * 64, 11 * 64), Skeleton(9 * 64, 8 * 64), Skeleton(20 * 64, 4 * 64)],
         [Skeleton(21 * 64, 4.5 * 64), Skeleton(7 * 64, 4.5 * 64), Skeleton(21 * 64, 11 * 64), Skeleton(7 * 64, 11 * 64)],
+        [Skeleton(21 * 64, 4.5 * 64), Skeleton(7 * 64, 4.5 * 64), Skeleton(21 * 64, 11 * 64), Skeleton(7 * 64, 11 * 64)],
+        []
     ]
 
     above_player = []
@@ -1038,8 +1042,10 @@ async def main():
         load_level("assets/maps/csv/crates_lvl_2.csv"),
         load_level("assets/maps/csv/crates_lvl_3.csv"),
         load_level("assets/maps/csv/crates_lvl_4.csv"),
+        load_level("assets/maps/csv/crates_lvl_5.csv"),
+        load_level("assets/maps/csv/crates_lvl_6.csv"),
     ]
-    potions = [[], [], [], []]
+    potions = [[], [], [], [], [], []]
 
     crates = []
 
@@ -1047,7 +1053,7 @@ async def main():
     current_level = 0
 
     key_coords = [random.randint(0, len(levels[current_level][0]) - 1), random.randint(0, len(levels[current_level]) - 1)]
-    while levels[current_level][key_coords[1]][key_coords[0]] != 1:
+    while levels[current_level][key_coords[1]][key_coords[0]] != 1 and current_level != 5:
         key_coords = [random.randint(0, len(levels[current_level][0]) - 1), random.randint(0, len(levels[current_level]) - 1)]
 
     for i, row in enumerate(levels[current_level]):
@@ -1140,6 +1146,8 @@ async def main():
     key_slot_text.set_colorkey([0, 0, 0])
 
     win_rects = [
+        pygame.Rect(1784, 0, 152, 196),
+        pygame.Rect(1784, 0, 152, 196),
         pygame.Rect(1784, 0, 152, 196),
         pygame.Rect(1784, 0, 152, 196),
         pygame.Rect(1784, 0, 152, 196),
@@ -1303,6 +1311,7 @@ async def main():
     game_title.position = [(win.get_width() - game_title.get_width())/2, (win.get_height() - game_title.get_height())/2 - 64]
     
     credits_screen = pygame.image.load("assets/sprites/credits.png").convert()
+    victory_screen = scale_image(pygame.image.load("assets/maps/png/victory.png").convert())
 
     while True:
         if not player.alive:
@@ -1311,7 +1320,7 @@ async def main():
 
         win.fill([0, 0, 0])
         win.blit(bg, [0, 0])
-
+        
         clock.tick(240)
 
         current_fps = clock.get_fps()
@@ -1321,6 +1330,12 @@ async def main():
                 pygame.quit()
 
         if State.current == 1:
+            
+            if current_level == 5:
+                win.blit(victory_screen, [0, 0])
+                credits_to_menu_button.update()
+                win.blit(menu_text, [(win.get_width() - menu_text.get_width()) / 2, 806 + credits_to_menu_button.current * 4])
+            
             count = -1
 
             below_player.clear()
@@ -1669,14 +1684,26 @@ async def main():
                             Skeleton(21 * 64, 11 * 64),
                             Skeleton(7 * 64, 11 * 64),
                         ],
+                        [
+                            Wizard(15 * 64, 6.5 * 64),
+                            Skeleton(21 * 64, 4.5 * 64),
+                            Skeleton(7 * 64, 4.5 * 64),
+                            Skeleton(21 * 64, 11 * 64),
+                            Skeleton(7 * 64, 11 * 64),
+                        ],
+                        []
                     ]
+                    
+                    if current_level == 4:
+                        player.inventory["health_potions"] = 1
+                        player.inv_no = 2
 
                     bullet_manager.bullets.clear()
 
                     above_player = []
                     below_player = []
 
-                    potions = [[], [], [], []]
+                    potions = [[], [], [], [], [], []]
 
                     crates = []
 
@@ -1684,7 +1711,7 @@ async def main():
                         random.randint(0, len(levels[current_level][0]) - 1),
                         random.randint(0, len(levels[current_level]) - 1),
                     ]
-                    while levels[current_level][key_coords[1]][key_coords[0]] != 1:
+                    while levels[current_level][key_coords[1]][key_coords[0]] != 1 and current_level != 5:
                         key_coords = [
                             random.randint(0, len(levels[current_level][0]) - 1),
                             random.randint(0, len(levels[current_level]) - 1),
