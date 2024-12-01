@@ -196,6 +196,10 @@ def play():
     State.change(1)
     player.alive = False
     pygame.mixer.music.stop()
+    global music_slider
+    music_slider.pos = (441, 8)
+    music_slider.choice_rect = pygame.Rect(music_slider.pos[0], music_slider.pos[1] + 2, 16, 24)
+    music_slider.choice_rect.x += (music_slider.value * music_slider.rect.w)
 
 
 def resume():
@@ -236,12 +240,12 @@ def pause():
 
 def tutorial_start():
     global State
-    State.change(4)
+    State.change(3)
 
 
 def show_credits():
     global State
-    State.change(3)
+    State.change(4)
 
 
 button_spritesheet = SpriteSheet(scale_image(pygame.image.load("assets/sprites/buttons.png").convert()), [2, 1], [0, 0, 0])
@@ -255,7 +259,7 @@ small_button_pos = [(win.get_width() - 64 * 4) / 2 + 276, win.get_height() - 88]
 title_screen_font = pygame.font.Font("assets/font/yoster.ttf", 30)
 title_screen_buttons = [
     Button(button_center_pos, button_spritesheet.sheet[0], play),
-    Button([button_center_pos[0], button_center_pos[1] + 78], button_spritesheet.sheet[0], show_credits),
+    Button([button_center_pos[0], button_center_pos[1] + 78], button_spritesheet.sheet[0], tutorial_start),
     Button([button_center_pos[0], button_center_pos[1] + 156], button_spritesheet.sheet[0], show_credits),
 ]
 title_screen_text = [
@@ -456,6 +460,7 @@ async def main():
             if self.health <= 0:
                 self.alive = False
                 if not music_player.level_end_sfx.get_busy():
+                    pygame.mixer.music.stop()
                     music_player.level_end_sfx.play(music_player.death_sound)
                 self.health = 0
 
@@ -892,10 +897,7 @@ async def main():
 
                         crates.pop(c)
                         explosions.append([(rect.x + crate.get_width() / 2, rect.y + crate.get_height() / 2), 0, time.time()])
-                        
-                        if not music_player.crate_explode_channel.get_busy():
-                            music_player.crate_explode_channel.play(music_player.explode_sound)
-                        
+                    
                         break
                     c += 1
                 win.blit(pygame.transform.rotate(self.bullet_sprite, 360 - bullet[1]), (bullet[0].x, bullet[0].y))
@@ -1183,6 +1185,7 @@ async def main():
     tutorial_behind_button = Button([662, 32], left_arrow_button_spritesheet.sheet[0], tutorial_backward_function)
 
     tutorial_to_menu_button = Button([(win.get_width() - button_spritesheet.size[0]) / 2, 100], button_spritesheet.sheet[0], menu2)
+    credits_to_menu_button = Button([(win.get_width() - button_spritesheet.size[0]) / 2, 790], button_spritesheet.sheet[0], menu2)
 
     menu_text = title_screen_font.render("Menu", False, [255, 255, 255], [0, 0, 0])
     menu_text.set_colorkey([0, 0, 0])
@@ -1216,6 +1219,90 @@ async def main():
     State.on_change = music_player.update
 
     State.change(0)
+    
+    class OutlinedText(object):
+        def __init__(
+                self,
+                text,
+                position,
+                outline_width,
+                font_size,
+                screen,
+                foreground_color=(255, 255, 255),
+                background_color=(0, 0, 0)
+        ):
+
+            self.text = text
+            self.position = position
+            self.foreground = foreground_color
+            self.background = background_color
+            self.outline_width = outline_width
+            self.screen = screen
+            self.font = pygame.font.Font("assets/font/yoster.ttf", font_size)
+            self.text_surface = self.font.render(self.text, True, self.foreground)
+            self.text_outline_surface = self.font.render(self.text, True, self.background)
+            # There is no good way to get an outline with pygame, so we draw
+            # the text at 8 points around the main text to simulate an outline.
+            self.directions = [
+                (self.outline_width, self.outline_width),
+                (0, self.outline_width),
+                (-self.outline_width, self.outline_width),
+                (self.outline_width, 0),
+                (-self.outline_width, 0),
+                (self.outline_width, -self.outline_width),
+                (0, -self.outline_width),
+                (-self.outline_width, -self.outline_width)
+            ]
+
+        def get_width(self):
+
+            return self.text_surface.get_width() + self.outline_width * 2
+        
+        def get_height(self):
+
+            return self.text_surface.get_height() + self.outline_width * 2
+
+        def change_position(self, position):
+
+            self.position = position
+
+        def change_text(self, text):
+
+            self.text = text
+            self._update_text()
+
+        def change_foreground_color(self, color):
+
+            self.foreground = color
+            self._update_text()
+
+        def change_outline_color(self, color):
+
+            self.background = color
+            self._update_text()
+
+        def _update_text(self):
+
+            self.text_surface = self.font.render(self.text, True, self.foreground)
+            self.text_outline_surface = self.font.render(self.text, True, self.background)
+
+        def draw(self):
+            # blit outline images to screen
+            for direction in self.directions:
+                self.screen.blit(
+                    self.text_outline_surface,
+                    (
+                        self.position[0] - direction[0],
+                        self.position[1] - direction[1]
+                    )
+                )
+            # blit foreground image to the screen
+            self.screen.blit(self.text_surface, self.position)
+    
+    game_title = OutlinedText("Castle 51", (100, 100), 6, 56, win)
+    game_title.position = [(win.get_width() - game_title.get_width())/2, (win.get_height() - game_title.get_height())/2 - 64]
+    
+    credits_screen = pygame.image.load("assets/sprites/credits.png").convert()
 
     while True:
         if not player.alive:
@@ -1525,6 +1612,8 @@ async def main():
                 player.win = True
                 player.has_artifact = False
                 current_level += 1
+                pygame.mixer.music.stop()
+                music_player.level_end_sfx.play(music_player.win_sound)
                 if current_level > len(levels) - 1:
                     current_level -= 1
 
@@ -1658,6 +1747,8 @@ async def main():
                     [title_screen_text[count][1][0], title_screen_text[count][1][1] + button.current * 4],
                 )
 
+            game_title.draw()
+
         elif State.current == 2:
 
             win.blit(screenshot, [0, 0])
@@ -1694,6 +1785,11 @@ async def main():
 
             tutorial_forward_button.update()
             tutorial_behind_button.update()
+            
+        elif State.current == 4:
+            win.blit(credits_screen, [0, 0])
+            credits_to_menu_button.update()
+            win.blit(menu_text, [(win.get_width() - menu_text.get_width()) / 2, 806 + credits_to_menu_button.current * 4])
         # pygame.draw.rect(win, [255, 0, 0], win_rects[current_level])
         pygame.display.update()
         await asyncio.sleep(0)
