@@ -228,7 +228,7 @@ def menu():
 
 def menu2():
     global State
-    State.change(0)
+    State.current = 0
 
 
 def pause():
@@ -236,16 +236,21 @@ def pause():
     screenshot = win.copy()
     screenshot.blit(small_button_spritesheet.sheet[0][0], small_button_pos)
     State.change(2)
+    pygame.mixer.music.stop()
+    global music_slider
+    music_slider.pos = [escape_screen_buttons[0].pos[0] - 32, escape_screen_buttons[0].pos[1] - 64]
+    music_slider.choice_rect = pygame.Rect(music_slider.pos[0], music_slider.pos[1] + 2, 16, 24)
+    music_slider.choice_rect.x += (music_slider.value * music_slider.rect.w)
 
 
 def tutorial_start():
     global State
-    State.change(3)
+    State.current = 3
 
 
 def show_credits():
     global State
-    State.change(4)
+    State.current = 4
 
 
 button_spritesheet = SpriteSheet(scale_image(pygame.image.load("assets/sprites/buttons.png").convert()), [2, 1], [0, 0, 0])
@@ -1627,7 +1632,6 @@ async def main():
                 player.win = True
                 player.has_artifact = False
                 current_level += 1
-                pygame.mixer.music.stop()
                 music_player.level_end_sfx.play(music_player.win_sound)
                 if current_level > len(levels) - 1:
                     current_level -= 1
@@ -1658,9 +1662,6 @@ async def main():
                         )
 
                 if radius > 1000:
-
-                    # pygame.mixer.music.stop()
-                    # pygame.mixer.music.set_volume(1)
 
                     radius = 0
 
@@ -1756,6 +1757,8 @@ async def main():
                     if State.current != 0:
                         pygame.mixer.music.stop()
                         music_player.update()
+                    
+                    continue
                         
             if pygame.key.get_pressed()[pygame.K_SPACE] and player.alive:
                 State.change(2)
