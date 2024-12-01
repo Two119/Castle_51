@@ -502,19 +502,25 @@ async def main():
                     potion_type = random.randint(0, 2)
                     if potion_type == 0:
                         self.inventory["speed_potions"] += 1
+                        notifications.append(Notification(speed_pot_notification))
+                        music_player.found_key_channel.play(music_player.found_key_sound)
 
                     elif potion_type == 1:
                         self.inventory["air_potions"] += 1
-
+                        notifications.append(Notification(air_pot_notification))
+                        music_player.found_key_channel.play(music_player.found_key_sound)
+                        
                     else:
                         self.inventory["health_potions"] += 1
+                        notifications.append(Notification(health_pot_notification))
+                        music_player.found_key_channel.play(music_player.found_key_sound)
+                            
                     potions[current_level][current_crate_coord[1]][current_crate_coord[0]] = 0
 
                 if potions[current_level][current_crate_coord[1]][current_crate_coord[0]] == 7 and not self.has_artifact:
                     self.has_artifact = True
                     notifications.append(Notification(key_notification))
-                    if not music_player.found_key_channel.get_busy():
-                            music_player.found_key_channel.play(music_player.found_key_sound)
+                    music_player.found_key_channel.play(music_player.found_key_sound)
                     # print(potion_type)
 
             self.pos[0] += self.vel[0] * (60 / current_fps)
@@ -906,7 +912,9 @@ async def main():
 
                         crates.pop(c)
                         explosions.append([(rect.x + crate.get_width() / 2, rect.y + crate.get_height() / 2), 0, time.time()])
-                        music_player.explode_sound.play()
+                        
+                        if not music_player.crate_explode_channel.get_busy():
+                            music_player.crate_explode_channel.play(music_player.explode_sound)
                         break
                     c += 1
                 win.blit(pygame.transform.rotate(self.bullet_sprite, 360 - bullet[1]), (bullet[0].x, bullet[0].y))
@@ -1135,6 +1143,15 @@ async def main():
 
     key_notification = ui_font.render("FOUND KEY!", False, [255, 255, 255], [0, 0, 0])
     key_notification.set_colorkey([0, 0, 0])
+    
+    health_pot_notification = ui_font.render("+1 HEALTH POTION!", False, [255, 255, 255], [0, 0, 0])
+    health_pot_notification.set_colorkey([0, 0, 0])
+    
+    speed_pot_notification = ui_font.render("+1 SPEED POTION!", False, [255, 255, 255], [0, 0, 0])
+    speed_pot_notification.set_colorkey([0, 0, 0])
+    
+    air_pot_notification = ui_font.render("+1 BREATHING POTION!", False, [255, 255, 255], [0, 0, 0])
+    air_pot_notification.set_colorkey([0, 0, 0])
 
     death_text = big_font.render("YOU DIED!", False, [255, 255, 255], [0, 0, 0])
     death_text.set_colorkey([0, 0, 0])
@@ -1145,7 +1162,7 @@ async def main():
     speed_potion_text = above_inv_font.render("5 Sec Speed Boost Potion", False, [255, 255, 255], [0, 0, 0])
     speed_potion_text.set_colorkey([0, 0, 0])
 
-    air_potion_text = above_inv_font.render("Air Refill Potion", False, [255, 255, 255], [0, 0, 0])
+    air_potion_text = above_inv_font.render("Breathing Potion", False, [255, 255, 255], [0, 0, 0])
     air_potion_text.set_colorkey([0, 0, 0])
 
     health_potion_text = above_inv_font.render("Health Potion", False, [255, 255, 255], [0, 0, 0])
@@ -1457,24 +1474,25 @@ async def main():
             if player.crate != None:
                 pygame.draw.rect(win, [255, 255, 255], crates[player.crate][1], 4)
 
-            for wizard in wizards[current_level]:
-                wizard.draw()
-                if (wizard.rect.y + wizard.rect.h) > (win.get_height() - 40):
-                    if wizard.vel[1] > 0:
-                        wizard.vel[1] = 0
+            if not (not player.alive and screenshot is not None):
+                for wizard in wizards[current_level]:
+                    wizard.draw()
+                    if (wizard.rect.y + wizard.rect.h) > (win.get_height() - 40):
+                        if wizard.vel[1] > 0:
+                            wizard.vel[1] = 0
 
-                if (wizard.rect.y) < (128):
-                    if wizard.vel[1] < 0:
-                        wizard.vel[1] = 0
+                    if (wizard.rect.y) < (128):
+                        if wizard.vel[1] < 0:
+                            wizard.vel[1] = 0
 
-                if (wizard.rect.x) < (40):
-                    if wizard.vel[0] < 0:
-                        wizard.vel[0] = 0
+                    if (wizard.rect.x) < (40):
+                        if wizard.vel[0] < 0:
+                            wizard.vel[0] = 0
 
-                if (wizard.rect.x + wizard.rect.w) > (win.get_width() - 40):
-                    if wizard.vel[0] > 0:
-                        wizard.vel[0] = 0
-                wizard.update()
+                    if (wizard.rect.x + wizard.rect.w) > (win.get_width() - 40):
+                        if wizard.vel[0] > 0:
+                            wizard.vel[0] = 0
+                    wizard.update()
 
             air_notification = False
             for notification in notifications:
