@@ -557,7 +557,7 @@ async def main():
 
                 self.anim_time = time.time()
 
-        def update(self):
+        def draw(self):
 
             if not self.wide_rect.colliderect(player.wide_rect):
                 self.angle = angle_between((self.pos, player.pos))
@@ -672,6 +672,8 @@ async def main():
 
             win.blit(img, self.pos)
             win.blit(staff_img, self.staff_pos)
+            
+        def update(self):
 
             global current_fps
             self.pos[0] += self.vel[0] * (60 / current_fps)
@@ -718,6 +720,9 @@ async def main():
                     self.frame[0] = 0
 
                 self.anim_time = time.time()
+                
+        def draw(self):
+            pass
 
         def update(self):
 
@@ -871,8 +876,7 @@ async def main():
                     self.bullets.remove(bullet)
                     player.health -= 25
                     player.damange_jitter_timer = time.time()
-                    if not music_player.player_hurt_channel.get_busy():
-                        music_player.player_hurt_channel.play(music_player.hurt_sound)
+                    music_player.player_hurt_channel.play(music_player.hurt_sound)
                     continue
 
                 c = 0
@@ -902,7 +906,7 @@ async def main():
 
                         crates.pop(c)
                         explosions.append([(rect.x + crate.get_width() / 2, rect.y + crate.get_height() / 2), 0, time.time()])
-                    
+                        music_player.explode_sound.play()
                         break
                     c += 1
                 win.blit(pygame.transform.rotate(self.bullet_sprite, 360 - bullet[1]), (bullet[0].x, bullet[0].y))
@@ -1454,6 +1458,22 @@ async def main():
                 pygame.draw.rect(win, [255, 255, 255], crates[player.crate][1], 4)
 
             for wizard in wizards[current_level]:
+                wizard.draw()
+                if (wizard.rect.y + wizard.rect.h) > (win.get_height() - 40):
+                    if wizard.vel[1] > 0:
+                        wizard.vel[1] = 0
+
+                if (wizard.rect.y) < (128):
+                    if wizard.vel[1] < 0:
+                        wizard.vel[1] = 0
+
+                if (wizard.rect.x) < (40):
+                    if wizard.vel[0] < 0:
+                        wizard.vel[0] = 0
+
+                if (wizard.rect.x + wizard.rect.w) > (win.get_width() - 40):
+                    if wizard.vel[0] > 0:
+                        wizard.vel[0] = 0
                 wizard.update()
 
             air_notification = False
@@ -1539,15 +1559,13 @@ async def main():
                             player.inventory["speed_potions"] -= 1
                             player.speed_effect = 2.5
                             player.speed_time = time.time()
-                            if not music_player.potion_drink_channel.get_busy():
-                                music_player.potion_drink_channel.play(music_player.potion_sound)
+                            music_player.potion_drink_channel.play(music_player.potion_sound)
 
                     if player.inv_no == 1:
                         if player.inventory["air_potions"] > 0:
                             player.inventory["air_potions"] -= 1
                             player.air += 33
-                            if not music_player.potion_drink_channel.get_busy():
-                                music_player.potion_drink_channel.play(music_player.potion_sound)
+                            music_player.potion_drink_channel.play(music_player.potion_sound)
                                 
                     if player.inv_no == 2:
                         if player.inventory["health_potions"] > 0:
@@ -1555,8 +1573,7 @@ async def main():
                             player.health += 33
                             if player.health > 100:
                                 player.health = 100
-                            if not music_player.potion_drink_channel.get_busy():
-                                music_player.potion_drink_channel.play(music_player.potion_sound)
+                            music_player.potion_drink_channel.play(music_player.potion_sound)
                             
                     e_pressed = True
 
