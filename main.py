@@ -349,7 +349,7 @@ async def main():
                 self.anim_time = time.time()
 
         def update(self):
-            global ctrl_pressed
+            global SHIFT_pressed
             self.true_rect = pygame.Rect(self.pos[0]+20, self.pos[1] + 12, 76, 116)
             self.rect = pygame.Rect(self.pos[0] + 32, self.pos[1] + 12, 64, 116)
             self.wide_rect = pygame.Rect(self.pos[0], self.pos[1] - 8, 128, 144)
@@ -383,15 +383,15 @@ async def main():
                     self.vel[1] = 0
             else:
                 self.vel = [0, 0]
-                # print(ctrl_pressed)
+                # print(SHIFT_pressed)
                 current_crate_coord = [
                     int(crates[self.crate][1].x / crate.get_width()),
                     int(crates[self.crate][1].y / crate.get_height()),
                 ]
 
-                if not ctrl_pressed:
-                    if pygame.key.get_pressed()[pygame.K_LCTRL] or pygame.key.get_pressed()[pygame.K_RCTRL]:
-                        ctrl_pressed = True
+                if not SHIFT_pressed:
+                    if pygame.key.get_pressed()[pygame.K_LSHIFT] or pygame.key.get_pressed()[pygame.K_RSHIFT]:
+                        SHIFT_pressed = True
                         self.crate = None
 
                 if pygame.key.get_pressed()[pygame.K_d] or pygame.key.get_pressed()[pygame.K_RIGHT]:
@@ -1111,8 +1111,8 @@ async def main():
     global artifact
     artifact = None
 
-    global ctrl_pressed
-    ctrl_pressed = False
+    global SHIFT_pressed
+    SHIFT_pressed = False
 
     potion_sprites = [
         scale_image(pygame.image.load("assets/sprites/Potions/speed.png").convert()),
@@ -1152,6 +1152,9 @@ async def main():
     
     air_pot_notification = ui_font.render("+1 BREATHING POTION!", False, [255, 255, 255], [0, 0, 0])
     air_pot_notification.set_colorkey([0, 0, 0])
+    
+    run_notification = ui_font.render("QUICK! RUN TO THE CRATES!", False, [255, 255, 255], [0, 0, 0])
+    run_notification.set_colorkey([0, 0, 0])
 
     death_text = big_font.render("YOU DIED!", False, [255, 255, 255], [0, 0, 0])
     death_text.set_colorkey([0, 0, 0])
@@ -1386,8 +1389,8 @@ async def main():
                 if player.vel[0] > 0:
                     player.vel[0] = 0
 
-            if not (pygame.key.get_pressed()[pygame.K_LCTRL] or pygame.key.get_pressed()[pygame.K_RCTRL]):
-                ctrl_pressed = False
+            if not (pygame.key.get_pressed()[pygame.K_LSHIFT] or pygame.key.get_pressed()[pygame.K_RSHIFT]):
+                SHIFT_pressed = False
 
             for crate_, rect in crates:
                 count += 1
@@ -1404,8 +1407,8 @@ async def main():
                             above_player.remove(count)
                             
                     if rect.colliderect(player.rect):
-                        if (pygame.key.get_pressed()[pygame.K_LCTRL] or pygame.key.get_pressed()[pygame.K_RCTRL]) and not ctrl_pressed:
-                            ctrl_pressed = True
+                        if (pygame.key.get_pressed()[pygame.K_LSHIFT] or pygame.key.get_pressed()[pygame.K_RSHIFT]) and not SHIFT_pressed:
+                            SHIFT_pressed = True
                             if player.crate == None:
                                 player.crate = count
 
@@ -1788,6 +1791,9 @@ async def main():
                     if transitioning:
                         transitioning = False
                         State.change(0)
+                    else:
+                        if current_level >= 2:
+                            notifications.append(Notification(run_notification))
 
                     if State.current != 0:
                         pygame.mixer.music.stop()
