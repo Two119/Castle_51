@@ -87,13 +87,13 @@ class Notification:
         self.surf = surf
         self.alpha = 255
         self.pos = [(win.get_width() - self.surf.get_width()) / 2, (win.get_height() - self.surf.get_height()) / 2]
-        self.speed = 1
+        self.speed = 1.5
         self.rect = pygame.Rect(self.pos[0], self.pos[1], self.surf.get_width(), self.surf.get_height())
 
     def update(self):
-        self.pos[1] -= self.speed
+        self.pos[1] -= self.speed * (60 / current_fps)
         self.rect = pygame.Rect(self.pos[0], self.pos[1], self.surf.get_width(), self.surf.get_height())
-        self.alpha -= (self.speed * 1.5) * (60 / current_fps)
+        self.alpha -= self.speed * (60 / current_fps)
         if self.alpha <= 0:
             self.alpha = 0
         self.surf.set_alpha(int(self.alpha))
@@ -224,11 +224,17 @@ def menu():
 
     player.alive = False
     pygame.mixer.music.stop()
+    global current_level
+    if current_level == 5:
+        current_level = 0
 
 
 def menu2():
     global State
     State.current = 0
+    global current_level
+    if current_level == 5:
+        current_level = 0
 
 
 def pause():
@@ -329,7 +335,7 @@ async def main():
             self.mask = pygame.mask.from_surface(
                 pygame.transform.flip(knight_animations[self.frame[1]].get([self.frame[0], 0]), self.dir, False)
             )
-            self.inventory_box = pygame.Rect((win.get_width() - 64 * 4) / 2, win.get_height() - 88, 64 * 4, 64)
+            self.inventory_box = pygame.Rect((win.get_width() - 64 * 3) / 2, win.get_height() - 88, 64 * 3, 64)
             self.speed_effect = 0
             self.speed_time = time.time()
             self.damange_jitter_timer = time.time() - 3
@@ -466,7 +472,10 @@ async def main():
                 self.alive = False
                 if not music_player.level_end_sfx.get_busy():
                     pygame.mixer.music.stop()
+                    music_player.crate_explode_channel.stop()
+                    music_player.player_hurt_channel.stop()
                     music_player.level_end_sfx.play(music_player.death_sound)
+                    
                 self.health = 0
 
             if self.crate == None:
@@ -501,19 +510,35 @@ async def main():
                 if potions[current_level][current_crate_coord[1]][current_crate_coord[0]] == 1:
                     potion_type = random.randint(0, 2)
                     if potion_type == 0:
-                        self.inventory["speed_potions"] += 1
-                        notifications.append(Notification(speed_pot_notification))
-                        music_player.found_key_channel.play(music_player.found_key_sound)
-
+                        if player.speed_effect == 0:
+                            player.speed_effect = 2.5
+                            player.speed_time = time.time()
+                            notifications.append(Notification(speed_pot_notification))
+                            music_player.found_key_channel.play(music_player.found_key_sound)
+                            
                     elif potion_type == 1:
-                        self.inventory["air_potions"] += 1
-                        notifications.append(Notification(air_pot_notification))
-                        music_player.found_key_channel.play(music_player.found_key_sound)
+                        if player.air < 80:
+                            self.air += 33
+                            if self.air > 100:
+                                self.air = 100
+                            notifications.append(Notification(air_pot_notification))
+                            music_player.found_key_channel.play(music_player.found_key_sound)
+                        else:
+                            self.inventory["air_potions"] += 1
+                            notifications.append(Notification(air_pot_notification2))
+                            music_player.found_key_channel.play(music_player.found_key_sound)
                         
                     else:
-                        self.inventory["health_potions"] += 1
-                        notifications.append(Notification(health_pot_notification))
-                        music_player.found_key_channel.play(music_player.found_key_sound)
+                        if player.health < 100:
+                            self.health += 33
+                            if self.health > 100:
+                                self.health = 100
+                            notifications.append(Notification(health_pot_notification))
+                            music_player.found_key_channel.play(music_player.found_key_sound)
+                        else:
+                            self.inventory["health_potions"] += 1
+                            notifications.append(Notification(health_pot_notification2))
+                            music_player.found_key_channel.play(music_player.found_key_sound)
                             
                     potions[current_level][current_crate_coord[1]][current_crate_coord[0]] = 0
 
@@ -1144,14 +1169,23 @@ async def main():
     key_notification = ui_font.render("FOUND KEY!", False, [255, 255, 255], [0, 0, 0])
     key_notification.set_colorkey([0, 0, 0])
     
-    health_pot_notification = ui_font.render("+1 HEALTH POTION!", False, [255, 255, 255], [0, 0, 0])
+    health_pot_notification = ui_font.render("ACQUIRED HEALTH BOOST!", False, [255, 255, 255], [0, 0, 0])
     health_pot_notification.set_colorkey([0, 0, 0])
     
-    speed_pot_notification = ui_font.render("+1 SPEED POTION!", False, [255, 255, 255], [0, 0, 0])
+    health_pot_notification2 = ui_font.render("FOUND HEALTH POTION!", False, [255, 255, 255], [0, 0, 0])
+    health_pot_notification2.set_colorkey([0, 0, 0])
+    
+    speed_pot_notification = ui_font.render("ACQUIRED SPEED BOOST!", False, [255, 255, 255], [0, 0, 0])
     speed_pot_notification.set_colorkey([0, 0, 0])
     
-    air_pot_notification = ui_font.render("+1 BREATHING POTION!", False, [255, 255, 255], [0, 0, 0])
+    speed_pot_notification2 = ui_font.render("FOUND SPEED POTION!", False, [255, 255, 255], [0, 0, 0])
+    speed_pot_notification2.set_colorkey([0, 0, 0])
+    
+    air_pot_notification = ui_font.render("ACQUIRED AIR BOOST!", False, [255, 255, 255], [0, 0, 0])
     air_pot_notification.set_colorkey([0, 0, 0])
+    
+    air_pot_notification2 = ui_font.render("FOUND AIR POTION!", False, [255, 255, 255], [0, 0, 0])
+    air_pot_notification2.set_colorkey([0, 0, 0])
     
     run_notification = ui_font.render("QUICK! RUN TO THE CRATES!", False, [255, 255, 255], [0, 0, 0])
     run_notification.set_colorkey([0, 0, 0])
@@ -1233,6 +1267,12 @@ async def main():
     
     music_text = ui_font.render("Music: ", False, [255, 255, 255], [0, 0, 0])
     music_text.set_colorkey([0, 0, 0])
+    
+    speed_timer_text = ui_font.render("Speed Boost: ", False, [255, 255, 255], [0, 0, 0])
+    speed_timer_text.set_colorkey([0, 0, 0])
+    
+    speed_timer_texts = [ui_font.render(str(i) + "s", False, [255, 255, 255], [0, 0, 0]) for i in range(1, 6)]
+    [text.set_colorkey([0, 0, 0]) for text in speed_timer_texts]
 
     global screenshot
     screenshot = None
@@ -1350,7 +1390,7 @@ async def main():
         win.fill([0, 0, 0])
         win.blit(bg, [0, 0])
         
-        clock.tick(240)
+        clock.tick(60)
 
         current_fps = clock.get_fps()
 
@@ -1459,7 +1499,7 @@ async def main():
                     current_key_sprite = scale_image(key, current_key_scale)
                     win.blit(current_key_sprite, (artifact.x - current_key_sprite.get_width()/2, artifact.y - current_key_sprite.get_height()/2))
                     
-                    if player.rect.colliderect(artifact) and (player.crate is None):
+                    if player.rect.colliderect(pygame.Rect(artifact.x - current_key_sprite.get_width()/2, artifact.y - current_key_sprite.get_height()/2, current_key_sprite.get_height(), current_key_sprite.get_width())) and (player.crate is None):
                         notifications.append(Notification(key_notification))
                         player.has_artifact = True
                         if not music_player.found_key_channel.get_busy():
@@ -1521,24 +1561,18 @@ async def main():
             pygame.draw.line(
                 win,
                 [75, 75, 75],
-                [player.inventory_box.x + (1 * player.inventory_box.w / 4), player.inventory_box.y],
-                [player.inventory_box.x + (1 * player.inventory_box.w / 4), player.inventory_box.y + player.inventory_box.h - 4],
+                [player.inventory_box.x + (1 * player.inventory_box.w / 3), player.inventory_box.y],
+                [player.inventory_box.x + (1 * player.inventory_box.w / 3), player.inventory_box.y + player.inventory_box.h - 4],
                 4,
             )
             pygame.draw.line(
                 win,
                 [75, 75, 75],
-                [player.inventory_box.x + (2 * player.inventory_box.w / 4), player.inventory_box.y],
-                [player.inventory_box.x + (2 * player.inventory_box.w / 4), player.inventory_box.y + player.inventory_box.h - 4],
+                [player.inventory_box.x + (2 * player.inventory_box.w / 3), player.inventory_box.y],
+                [player.inventory_box.x + (2 * player.inventory_box.w / 3), player.inventory_box.y + player.inventory_box.h - 4],
                 4,
             )
-            pygame.draw.line(
-                win,
-                [75, 75, 75],
-                [player.inventory_box.x + (3 * player.inventory_box.w / 4), player.inventory_box.y],
-                [player.inventory_box.x + (3 * player.inventory_box.w / 4), player.inventory_box.y + player.inventory_box.h - 4],
-                4,
-            )
+
 
             speed_potions_no = inv_font.render(str(player.inventory["speed_potions"]), False, [255, 255, 255], [0, 0, 0])
             speed_potions_no.set_colorkey([0, 0, 0])
@@ -1549,17 +1583,13 @@ async def main():
             health_potions_no = inv_font.render(str(player.inventory["health_potions"]), False, [255, 255, 255], [0, 0, 0])
             health_potions_no.set_colorkey([0, 0, 0])
 
-            if player.inventory["speed_potions"] > 0:
-                win.blit(potion_sprites[0], [player.inventory_box.x + 16, player.inventory_box.y + 12])
-                win.blit(speed_potions_no, [player.inventory_box.x + 48, player.inventory_box.y + 44])
-
             if player.inventory["air_potions"] > 0:
-                win.blit(potion_sprites[1], [player.inventory_box.x + 16 + player.inventory_box.w / 4, player.inventory_box.y + 12])
-                win.blit(air_potions_no, [player.inventory_box.x + 48 + player.inventory_box.w / 4, player.inventory_box.y + 44])
+                win.blit(potion_sprites[1], [player.inventory_box.x + 16 + player.inventory_box.w / 3, player.inventory_box.y + 12])
+                win.blit(air_potions_no, [player.inventory_box.x + 48 + player.inventory_box.w / 3, player.inventory_box.y + 44])
 
             if player.inventory["health_potions"] > 0:
-                win.blit(potion_sprites[2], [player.inventory_box.x + 16 + player.inventory_box.w / 2, player.inventory_box.y + 12])
-                win.blit(health_potions_no, [player.inventory_box.x + 48 + player.inventory_box.w / 2, player.inventory_box.y + 44])
+                win.blit(potion_sprites[2], [player.inventory_box.x + 16, player.inventory_box.y + 12])
+                win.blit(health_potions_no, [player.inventory_box.x + 48, player.inventory_box.y + 44])
 
             if player.has_artifact:
                 win.blit(key, [player.inventory_box.x + 1 + player.inventory_box.w - key.get_width(), player.inventory_box.y + 0.5])
@@ -1570,30 +1600,21 @@ async def main():
                 player.inv_no = 1
             if pygame.key.get_pressed()[pygame.K_3]:
                 player.inv_no = 2
-            if pygame.key.get_pressed()[pygame.K_4]:
-                player.inv_no = 3
 
             if not e_pressed:
                 if pygame.key.get_pressed()[pygame.K_e]:
                     if player.inv_no == 0:
-                        if player.inventory["speed_potions"] > 0:
-                            player.inventory["speed_potions"] -= 1
-                            player.speed_effect = 2.5
-                            player.speed_time = time.time()
+                        if player.inventory["health_potions"] > 0:
+                            player.inventory["health_potions"] -= 1
+                            player.health += 33
+                            if player.health > 100:
+                                player.health = 100
                             music_player.potion_drink_channel.play(music_player.potion_sound)
 
                     if player.inv_no == 1:
                         if player.inventory["air_potions"] > 0:
                             player.inventory["air_potions"] -= 1
                             player.air += 33
-                            music_player.potion_drink_channel.play(music_player.potion_sound)
-                                
-                    if player.inv_no == 2:
-                        if player.inventory["health_potions"] > 0:
-                            player.inventory["health_potions"] -= 1
-                            player.health += 33
-                            if player.health > 100:
-                                player.health = 100
                             music_player.potion_drink_channel.play(music_player.potion_sound)
                             
                     e_pressed = True
@@ -1604,12 +1625,12 @@ async def main():
             bullet_manager.update()
 
             if player.inv_no == 0:
-                if player.inventory["speed_potions"] > 0:
+                if player.inventory["health_potions"] > 0:
                     win.blit(
-                        speed_potion_text,
+                        health_potion_text,
                         [
-                            player.inventory_box.x + (player.inventory_box.w - speed_potion_text.get_width()) / 2,
-                            player.inventory_box.y - speed_potion_text.get_height() - 8,
+                            player.inventory_box.x + (player.inventory_box.w - health_potion_text.get_width()) / 2,
+                            player.inventory_box.y - health_potion_text.get_height() - 8,
                         ],
                     )
 
@@ -1624,16 +1645,6 @@ async def main():
                     )
 
             elif player.inv_no == 2:
-                if player.inventory["health_potions"] > 0:
-                    win.blit(
-                        health_potion_text,
-                        [
-                            player.inventory_box.x + (player.inventory_box.w - health_potion_text.get_width()) / 2,
-                            player.inventory_box.y - health_potion_text.get_height() - 8,
-                        ],
-                    )
-
-            elif player.inv_no == 3:
                 if player.has_artifact:
                     win.blit(
                         key_slot_text,
@@ -1647,7 +1658,7 @@ async def main():
                 win,
                 [125, 125, 125],
                 pygame.Rect(
-                    player.inventory_box.x + (player.inv_no * player.inventory_box.w / 4),
+                    player.inventory_box.x + (player.inv_no * player.inventory_box.w / 3),
                     player.inventory_box.y,
                     player.inventory_box.h,
                     player.inventory_box.h,
@@ -1660,6 +1671,15 @@ async def main():
 
             pygame.draw.rect(win, [75, 75, 200], pygame.Rect(964, 8, (player.air / 100) * 256, 28))
             pygame.draw.rect(win, [25, 25, 100], pygame.Rect(964, 8, 256, 28), 4)
+            
+            if player.speed_effect != 0:
+                win.blit(speed_timer_text, (1236, 8))
+                pygame.draw.rect(win, [125, 125, 250], pygame.Rect(1236 + speed_timer_text.get_width(), 8, ((5 - (time.time() - player.speed_time))/5) * 256, 28))
+                pygame.draw.rect(win, [50, 50, 125], pygame.Rect(1236 + speed_timer_text.get_width(), 8, 256, 28), 4)
+                try:
+                    win.blit(speed_timer_texts[int((5 - (time.time() - player.speed_time)))], (1236 + speed_timer_text.get_width() + (256-speed_timer_texts[int((5 - (time.time() - player.speed_time)))].get_width())/2, 8))
+                except:
+                    pass
 
             win.blit(health_text, [692 + (256 - health_text.get_width()) / 2, 8])
             win.blit(air_text, [964 + (256 - air_text.get_width()) / 2, 8])
@@ -1716,7 +1736,7 @@ async def main():
                     wizards = [
                         [Wizard(14 * 64, 8 * 64)],
                         [Wizard(15 * 64, 7 * 64), Wizard(15 * 64, 11 * 64)],
-                        [Wizard(12 * 64, 4 * 64), Skeleton(20 * 64, 11 * 64), Skeleton(9 * 64, 8 * 64), Skeleton(20 * 64, 4 * 64)],
+                        [Skeleton(20 * 64, 11 * 64), Skeleton(9 * 64, 8 * 64), Skeleton(20 * 64, 4 * 64)],
                         [
                             Skeleton(21 * 64, 4.5 * 64),
                             Skeleton(7 * 64, 4.5 * 64),
@@ -1735,7 +1755,7 @@ async def main():
                     
                     if current_level == 4:
                         player.inventory["health_potions"] = 1
-                        player.inv_no = 2
+                        player.inv_no = 0
 
                     bullet_manager.bullets.clear()
 
@@ -1792,7 +1812,7 @@ async def main():
                         transitioning = False
                         State.change(0)
                     else:
-                        if current_level >= 2:
+                        if current_level >= 2 and current_level != 5:
                             notifications.append(Notification(run_notification))
 
                     if State.current != 0:
